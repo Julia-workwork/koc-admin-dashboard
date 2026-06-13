@@ -321,6 +321,15 @@ async function handleLogin(req, res) {
   });
 }
 
+async function handleHealth(res) {
+  sendJson(res, 200, {
+    status: "ok",
+    app: "koc-admin-dashboard",
+    passwordConfigured: Boolean(adminPassword),
+    appsScriptConfigured: Boolean(appsScriptUrl),
+  });
+}
+
 async function handleAnalyze(req, res) {
   const body = await readRequestJson(req);
 
@@ -390,6 +399,11 @@ async function handleStatic(req, res) {
 
 const server = createServer(async (req, res) => {
   try {
+    if (req.url?.startsWith("/api/health")) {
+      await handleHealth(res);
+      return;
+    }
+
     if (req.url?.startsWith("/api/login") && req.method === "POST") {
       await handleLogin(req, res);
       return;

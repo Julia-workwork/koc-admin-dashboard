@@ -82,6 +82,37 @@ Recommended environment variable:
 KOC_APPS_SCRIPT_URL="your-google-apps-script-web-app-url"
 ```
 
+After deployment, check:
+
+```text
+https://your-render-url.onrender.com/api/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "app": "koc-admin-dashboard",
+  "passwordConfigured": true,
+  "appsScriptConfigured": true
+}
+```
+
+Then open the main app URL and sign in with `ADMIN_PASSWORD`.
+
+If the app opens but data does not load:
+
+- Confirm `KOC_APPS_SCRIPT_URL` is set in Render.
+- Confirm the Apps Script deployment still works.
+- Open `/api/health` and check `appsScriptConfigured`.
+
+If the public URL shows `Not Found` or Render deploy fails:
+
+- Confirm the Start Command is `node server.mjs`.
+- Confirm the latest commit is deployed.
+- Confirm the service logs include `KOC Admin running on 0.0.0.0:<port>`.
+
 ## Data Source
 
 The dashboard first tries to read this Google Sheet as CSV:
