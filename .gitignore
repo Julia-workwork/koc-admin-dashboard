@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Local data and private Google Sheet connection files.
+data/*.json
+google-apps-script-url.txt
+google-sheet-csv-url.txt
+
+# Local runtime and debug output.
+*.log
+npm-debug.log*
+
+# Design previews generated during local iteration.
+banner-inspired-mockup.png
+banner-ui-full-page-mockup.png
+design-modern-saas-preview.png

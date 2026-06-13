@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KOC Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+
+  <body>
+    <section id="login-view" class="login-view">
+      <form id="login-form" class="login-card">
+        <p class="eyebrow">Internal Team Access</p>
+        <h1>KOC Admin</h1>
+        <p class="login-note">Enter the team password to view user operations data.</p>
+        <label>
+          <span>Password</span>
+          <input id="password-input" type="password" autocomplete="current-password" placeholder="Team password" />
+        </label>
+        <button class="button primary" type="submit">Enter Dashboard</button>
+        <p id="login-message" class="login-message"></p>
+      </form>
+    </section>
+
+    <header class="app-header app-shell" hidden>
+      <nav class="hero-nav" aria-label="Dashboard sections">
+        <span>Overview</span>
+        <span>Data Sync <b aria-hidden="true"></b></span>
+        <span>Julia</span>
+      </nav>
+
+      <div class="hero-row">
+        <div class="hero-copy">
+          <p class="eyebrow">Julia's User Operations</p>
+          <h1>KOC Admin</h1>
+          <p class="hero-note">Private KOC management workspace for user value, beta testing, content quality, and follow-up rhythm.</p>
+        </div>
+
+        <nav class="tabs" aria-label="Primary">
+          <button class="tab active" data-view="today">Today</button>
+          <button class="tab" data-view="users" data-year="2025">2025 Users</button>
+          <button class="tab" data-view="users" data-year="2026">2026 Users</button>
+          <button class="tab" data-view="influencers">Influencers</button>
+          <button class="tab" data-view="rules">Rules</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="app-shell" hidden>
+      <section id="state-message" class="state-message">Loading KOC user data...</section>
+
+      <section id="today-view" class="view active">
+        <div class="summary-strip" id="summary-strip"></div>
+        <div class="today-grid" id="today-grid"></div>
+      </section>
+
+      <section id="users-view" class="view">
+        <div class="users-sticky-panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">User List</p>
+              <h2 id="users-title">2026 Users</h2>
+            </div>
+            <span id="users-count" class="count-pill">0 users</span>
+          </div>
+
+          <div class="toolbar">
+            <label class="search-box">
+              <span>Search</span>
+              <input id="search-input" type="search" placeholder="Name, email, country, product" />
+            </label>
+
+            <label>
+              <span>Level</span>
+              <select id="level-filter"></select>
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select id="status-filter"></select>
+            </label>
+
+            <label>
+              <span>Type</span>
+              <select id="type-filter"></select>
+            </label>
+
+            <label>
+              <span>Beta</span>
+              <select id="beta-filter"></select>
+            </label>
+
+            <label>
+              <span>Content</span>
+              <select id="content-filter"></select>
+            </label>
+
+            <label>
+              <span>Cooperation</span>
+              <select id="cooperation-filter"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Level</th>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Beta</th>
+                <th>Content</th>
+                <th>Cooperation</th>
+              </tr>
+            </thead>
+
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="influencers-view" class="view">
+        <div class="influencer-summary" id="influencer-summary"></div>
+
+        <div class="influencer-workspace">
+          <section class="influencer-list-panel">
+            <div class="section-title">
+              <div>
+                <p class="eyebrow">Social Partnership Management</p>
+                <h2>Influencers</h2>
+              </div>
+              <span id="influencer-count" class="count-pill">0 creators</span>
+            </div>
+
+            <div class="influencer-toolbar">
+              <label class="search-box">
+                <span>Search</span>
+                <input id="influencer-search-input" type="search" placeholder="Name, channel, email, product" />
+              </label>
+
+              <label>
+                <span>Channel</span>
+                <select id="influencer-channel-filter"></select>
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select id="influencer-status-filter"></select>
+              </label>
+
+              <label>
+                <span>Product</span>
+                <select id="influencer-product-filter"></select>
+              </label>
+            </div>
+
+            <div class="table-shell influencer-table-shell">
+              <table class="influencer-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Level</th>
+                    <th>Channel</th>
+                    <th>Audience</th>
+                    <th>Status</th>
+                    <th>Product</th>
+                    <th>Next Action</th>
+                  </tr>
+                </thead>
+
+                <tbody id="influencers-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="influencer-detail-panel" id="influencer-inline-detail">
+            <p class="eyebrow">Selected Creator</p>
+            <h3>Select an influencer</h3>
+            <p class="meta">Click a row to review channel links, notes, product fit, and the next action.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="rules-view" class="view">
+        <div class="rules-grid" id="rules-grid"></div>
+      </section>
+    </main>
+
+    <aside id="detail-panel" class="detail-panel" aria-hidden="true">
+      <div class="detail-header">
+        <div>
+          <p class="eyebrow">User Detail</p>
+          <h2 id="detail-name">Select a user</h2>
+        </div>
+
+        <button id="close-detail" class="icon-button" aria-label="Close">×</button>
+      </div>
+
+      <div id="detail-content"></div>
+    </aside>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

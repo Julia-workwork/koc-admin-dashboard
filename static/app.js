@@ -1,0 +1,713 @@
+import { OPTIONS, PALETTES } from "/lib/koc-domain.mjs";
+
+const state = {
+  users: [],
+  influencers: [],
+  usersByYear: {
+    2025: [],
+    2026: [],
+  },
+  activeYear: "2026",
+  today: null,
+  selected: null,
+  filters: {
+    query: "",
+    level: "",
+    status: "",
+    type: "",
+    beta: "",
+    content: "",
+    cooperation: "",
+  },
+  influencerFilters: {
+    query: "",
+    channel: "",
+    status: "",
+    product: "",
+  },
+};
+
+const SESSION_TOKEN_KEY = "koc_admin_session_token";
+
+const loginView = document.querySelector("#login-view");
+const loginForm = document.querySelector("#login-form");
+const loginMessage = document.querySelector("#login-message");
+const passwordInput = document.querySelector("#password-input");
+const appShell = document.querySelectorAll(".app-shell");
+const message = document.querySelector("#state-message");
+const summaryStrip = document.querySelector("#summary-strip");
+const todayGrid = document.querySelector("#today-grid");
+const usersBody = document.querySelector("#users-body");
+const usersTitle = document.querySelector("#users-title");
+const usersCount = document.querySelector("#users-count");
+const influencerSummary = document.querySelector("#influencer-summary");
+const influencerCount = document.querySelector("#influencer-count");
+const influencersBody = document.querySelector("#influencers-body");
+const influencerInlineDetail = document.querySelector("#influencer-inline-detail");
+const detailPanel = document.querySelector("#detail-panel");
+const detailName = document.querySelector("#detail-name");
+const detailContent = document.querySelector("#detail-content");
+
+function sessionToken() {
+  return sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
+}
+
+function authHeaders(extra = {}) {
+  const token = sessionToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
+function showLogin(text = "") {
+  loginView.hidden = false;
+  appShell.forEach((element) => {
+    element.hidden = true;
+  });
+  loginMessage.textContent = text;
+  passwordInput.focus();
+}
+
+function showApp() {
+  loginView.hidden = true;
+  appShell.forEach((element) => {
+    element.hidden = false;
+  });
+}
+
+function setMessage(text, type = "") {
+  message.textContent = text;
+  message.className = `state-message ${type}`.trim();
+}
+
+function hideMessage() {
+  message.textContent = "";
+  message.className = "state-message is-hidden";
+}
+
+function textColorForBackground(color) {
+  const fallback = "#1a2533";
+  const hex = String(color || "").replace("#", "");
+  if (!/^[\da-f]{6}$/i.test(hex)) return fallback;
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  return luminance < 0.46 ? "#ffffff" : fallback;
+}
+
+function chip(label, color) {
+  if (!label) return "";
+  const background = color || "#eef3f8";
+  return `<span class="chip" style="background:${background};color:${textColorForBackground(background)}">${escapeHtml(label)}</span>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function renderChips(values, palette) {
+  const items = (Array.isArray(values) ? values : [values]).filter(Boolean);
+  if (!items.length) return "";
+  return `<div class="chip-list">${items.map((item) => chip(item, palette?.[item])).join("")}</div>`;
+}
+
+function optionList(items) {
+  return ["", ...items].map((item) => `<option value="${escapeHtml(item)}">${item || "All"}</option>`).join("");
+}
+
+function uniqueOptions(values) {
+  return [...new Set(values.flat().filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+function setupFilters() {
+  document.querySelector("#level-filter").innerHTML = optionList(OPTIONS.level);
+  document.querySelector("#status-filter").innerHTML = optionList(OPTIONS.status);
+  document.querySelector("#type-filter").innerHTML = optionList(OPTIONS.type);
+  document.querySelector("#beta-filter").innerHTML = optionList(OPTIONS.yesNo);
+  document.querySelector("#content-filter").innerHTML = optionList(OPTIONS.quality);
+  document.querySelector("#cooperation-filter").innerHTML = optionList(OPTIONS.quality);
+
+  document.querySelector("#search-input").addEventListener("input", (event) => {
+    state.filters.query = event.target.value.trim().toLowerCase();
+    renderUsers();
+  });
+
+  [
+    ["#level-filter", "level"],
+    ["#status-filter", "status"],
+    ["#type-filter", "type"],
+    ["#beta-filter", "beta"],
+    ["#content-filter", "content"],
+    ["#cooperation-filter", "cooperation"],
+  ].forEach(([selector, key]) => {
+    document.querySelector(selector).addEventListener("change", (event) => {
+      state.filters[key] = event.target.value;
+      renderUsers();
+    });
+  });
+}
+
+function setupInfluencerFilters() {
+  document.querySelector("#influencer-search-input").addEventListener("input", (event) => {
+    state.influencerFilters.query = event.target.value.trim().toLowerCase();
+    renderInfluencers();
+  });
+
+  [
+    ["#influencer-channel-filter", "channel"],
+    ["#influencer-status-filter", "status"],
+    ["#influencer-product-filter", "product"],
+  ].forEach(([selector, key]) => {
+    document.querySelector(selector).addEventListener("change", (event) => {
+      state.influencerFilters[key] = event.target.value;
+      renderInfluencers();
+    });
+  });
+}
+
+function renderSummary() {
+  const buckets = state.today;
+  const cards = [
+    ["2025 Users", state.usersByYear["2025"].length, "summary-total"],
+    ["2026 Users", state.usersByYear["2026"].length, "summary-live"],
+    ["Update Pending", buckets.updatePending.length, "summary-pending"],
+    ["Need Follow-up", buckets.needFollowUp.length, "summary-followup"],
+    ["Watchlist", buckets.watchlist.length, "summary-risk"],
+  ];
+  summaryStrip.innerHTML = cards
+    .map(
+      ([label, value, className]) =>
+        `<div class="summary-card ${className}"><span class="meta">${label}</span><strong>${value}</strong><small>Current operating view</small></div>`,
+    )
+    .join("");
+}
+
+function smallUserCard(user) {
+  return `<article class="user-card">
+    <button data-key="${escapeHtml(user.key)}">${escapeHtml(user.name || "(No name)")}</button>
+    <div class="chip-list">
+      ${chip(user.year, "#eaf2f8")}
+      ${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}
+      ${chip(user.status || "No Status", PALETTES.status[user.status])}
+    </div>
+    <div class="meta">${escapeHtml(user.followUpReason || user.updateInput || user.country || user.ownedProduct || "No reason yet")}</div>
+  </article>`;
+}
+
+function renderToday() {
+  const groups = [
+    ["Need Follow-up", state.today.needFollowUp],
+    ["Update Input Pending", state.today.updatePending],
+    ["High Value Quiet", state.today.highValueQuiet],
+    ["Watchlist / Risk", state.today.watchlist],
+  ];
+  todayGrid.innerHTML = groups
+    .map(
+      ([title, rows]) => `<section class="status-column">
+        <h3>${title}</h3>
+        ${rows.slice(0, 12).map(smallUserCard).join("") || '<p class="meta">No users here.</p>'}
+      </section>`,
+    )
+    .join("");
+}
+
+function filteredUsers() {
+  return state.usersByYear[state.activeYear].filter((user) => {
+    if (state.filters.query && !user.searchText.includes(state.filters.query)) return false;
+    if (state.filters.level && user.level !== state.filters.level) return false;
+    if (state.filters.status && user.status !== state.filters.status) return false;
+    if (state.filters.type && !user.types.includes(state.filters.type)) return false;
+    if (state.filters.beta && user.betaPotential !== state.filters.beta) return false;
+    if (state.filters.content && user.contentQuality !== state.filters.content) return false;
+    if (state.filters.cooperation && user.cooperation !== state.filters.cooperation) return false;
+    return true;
+  });
+}
+
+function renderUsers() {
+  const rows = filteredUsers();
+  usersTitle.textContent = `${state.activeYear} Users`;
+  usersCount.textContent = `${rows.length} users`;
+  usersBody.innerHTML = rows
+    .map(
+      (user) => `<tr>
+        <td>
+          <button class="link-button" data-key="${escapeHtml(user.key)}">${escapeHtml(user.name || "(No name)")}</button>
+          <div class="meta">${escapeHtml(user.email)}</div>
+        </td>
+        <td>${escapeHtml(user.date || user.Date || user.DATE || "")}</td>
+        <td>${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}</td>
+        <td>${chip(user.status || "", PALETTES.status[user.status])}</td>
+        <td>${renderChips(user.types, PALETTES.type)}</td>
+        <td>${chip(user.betaPotential, PALETTES.beta[user.betaPotential])}</td>
+        <td>${chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])}</td>
+        <td>${chip(user.cooperation, PALETTES.cooperation[user.cooperation])}</td>
+      </tr>`,
+    )
+    .join("");
+}
+
+function channelColor(channel) {
+  return PALETTES.channel?.[channel] || PALETTES.channel?.[channel.replace("INS", "Instagram")] || "#eaf2f8";
+}
+
+function productLabel(user) {
+  return user.exchangeProduct || user.ownedProduct || "TBD";
+}
+
+function nextAction(user) {
+  if (user.followUpReason) return user.followUpReason;
+  if (user.notes) return user.notes.split("\n").filter(Boolean).at(-1) || user.notes;
+  if (user.status === "In Collaboration") return "Track collaboration progress";
+  if (user.status === "Ready to Follow Up") return "Send or continue outreach";
+  return user.updateInput || "Review creator fit";
+}
+
+function renderInfluencerSummary() {
+  const rows = state.influencers;
+  const channelCount = (name) => rows.filter((row) => row.channels.some((channel) => channel.toLowerCase() === name)).length;
+  const cards = [
+    ["Total Leads", rows.length, "summary-total"],
+    ["Instagram", channelCount("ins") + channelCount("instagram"), "summary-insta"],
+    ["TikTok", channelCount("tiktok"), "summary-tiktok"],
+    ["YouTube", channelCount("youtube"), "summary-live"],
+    ["Active Collab", rows.filter((row) => row.status === "In Collaboration").length, "summary-collab"],
+    ["Need Follow-up", rows.filter((row) => row.status === "Ready to Follow Up").length, "summary-followup"],
+  ];
+  influencerSummary.innerHTML = cards
+    .map(
+      ([label, value, className]) =>
+        `<div class="summary-card ${className}"><span class="meta">${label}</span><strong>${value}</strong><small>Creator pipeline</small></div>`,
+    )
+    .join("");
+}
+
+function setupInfluencerOptions() {
+  const channels = uniqueOptions(state.influencers.map((row) => row.channels));
+  const statuses = uniqueOptions(state.influencers.map((row) => [row.status]));
+  const products = uniqueOptions(state.influencers.map((row) => [productLabel(row)]));
+  document.querySelector("#influencer-channel-filter").innerHTML = optionList(channels);
+  document.querySelector("#influencer-status-filter").innerHTML = optionList(statuses);
+  document.querySelector("#influencer-product-filter").innerHTML = optionList(products);
+}
+
+function filteredInfluencers() {
+  return state.influencers.filter((user) => {
+    const filters = state.influencerFilters;
+    if (filters.query && !user.searchText.includes(filters.query)) return false;
+    if (filters.channel && !user.channels.includes(filters.channel)) return false;
+    if (filters.status && user.status !== filters.status) return false;
+    if (filters.product && productLabel(user) !== filters.product) return false;
+    return true;
+  });
+}
+
+function renderInfluencers() {
+  const rows = filteredInfluencers();
+  influencerCount.textContent = `${rows.length} creators`;
+  influencersBody.innerHTML = rows
+    .map(
+      (user) => `<tr>
+        <td>
+          <button class="link-button" data-key="${escapeHtml(user.key)}">${escapeHtml(user.name || "(No name)")}</button>
+          <div class="meta">${escapeHtml(user.email || user.country || "creator lead")}</div>
+        </td>
+        <td>${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}</td>
+        <td>${renderChips(user.channels, PALETTES.channel)}</td>
+        <td>${escapeHtml(user.audience || "TBD")}</td>
+        <td>${chip(user.status || "", PALETTES.status[user.status])}</td>
+        <td>${chip(productLabel(user), productLabel(user) === "TBD" ? "#f2f2f2" : "#f4b183")}</td>
+        <td><span class="next-action">${escapeHtml(nextAction(user))}</span></td>
+      </tr>`,
+    )
+    .join("");
+  if (!rows.length) {
+    influencersBody.innerHTML = `<tr><td colspan="7"><p class="detail-empty">No influencers match these filters.</p></td></tr>`;
+  }
+}
+
+function field(label, value) {
+  const cleaned = String(value ?? "").trim();
+  if (!cleaned) return "";
+  return `<div class="field"><span>${label}</span><p class="field-value">${escapeHtml(cleaned)}</p></div>`;
+}
+
+function fieldHtml(label, html) {
+  if (!html) return "";
+  return `<div class="field"><span>${label}</span><div class="field-value">${html}</div></div>`;
+}
+
+function fieldGrid(fields, emptyText = "No information recorded.") {
+  const filled = fields.filter(Boolean).join("");
+  return filled || `<p class="detail-empty">${emptyText}</p>`;
+}
+
+function renderLinkList(links) {
+  if (!links?.length) return "";
+  return `<div class="link-list">${links
+    .map((link) => `<a href="${escapeHtml(link)}" target="_blank" rel="noreferrer">${escapeHtml(link)}</a>`)
+    .join("")}</div>`;
+}
+
+function renderInfluencerInlineDetail(user) {
+  const basicFields = fieldGrid([
+    field("No.", user.no),
+    field("Date", user.date),
+    field("Profile", user.profile),
+    field("Channel", user.channel),
+  ]);
+  const evaluationFields = fieldGrid([
+    fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
+    fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
+    fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
+    fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
+    fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
+    fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
+    fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
+  ]);
+  const productFields = fieldGrid([
+    field("Self-Owned Product", user.ownedProduct),
+    field("Exchange Product", user.exchangeProduct),
+  ]);
+  const contactFields = fieldGrid([field("Country/Region", user.country), field("Email", user.email), field("Address", user.address)]);
+  const notesFields = fieldGrid(
+    [
+      field("Description", user.description),
+      field("Resources", user.resources),
+      field("Notes", user.notes),
+      field("Extra Notes 1", user.extraNotes),
+      field("Extended Background", user.extendedBackground),
+      field("Raw Update Notes", user.updateInput),
+    ],
+    "No notes recorded.",
+  );
+  influencerInlineDetail.innerHTML = `
+    <p class="eyebrow">Selected Creator</p>
+    <div class="creator-detail-head">
+      <div class="creator-avatar">${escapeHtml(user.level || "TBD")}</div>
+      <div>
+        <h3>${escapeHtml(user.name || "(No name)")}</h3>
+        <p class="meta">${escapeHtml([user.channel, user.country].filter(Boolean).join(" · ") || "Creator lead")}</p>
+      </div>
+    </div>
+    <div class="detail-chip-row">
+      ${renderChips(user.channels, PALETTES.channel)}
+      ${chip(user.status || "No Status", PALETTES.status[user.status])}
+      ${chip(productLabel(user), productLabel(user) === "TBD" ? "#f2f2f2" : "#f4b183")}
+    </div>
+    <div class="creator-stats">
+      <div><span>Audience</span><strong>${escapeHtml(user.audience || "TBD")}</strong></div>
+      <div><span>Email</span><strong>${escapeHtml(user.email ? "Yes" : "No")}</strong></div>
+      <div><span>Level</span><strong>${escapeHtml(user.level || "TBD")}</strong></div>
+    </div>
+    <section class="creator-note">
+      <span>Latest Note</span>
+      <p>${escapeHtml(user.notes || user.description || "No notes recorded yet.")}</p>
+    </section>
+    <section class="creator-note">
+      <span>Next Action</span>
+      <p>${escapeHtml(nextAction(user))}</p>
+    </section>
+    ${fieldHtml("Links", renderLinkList(user.links))}
+    <details class="creator-detail-group" open>
+      <summary>Basic Information</summary>
+      <div class="field-grid compact-field-grid">${basicFields}</div>
+    </details>
+    <details class="creator-detail-group" open>
+      <summary>Evaluation & Segmentation</summary>
+      <div class="field-grid compact-field-grid">${evaluationFields}</div>
+    </details>
+    <details class="creator-detail-group">
+      <summary>Product Relationship</summary>
+      <div class="field-grid compact-field-grid">${productFields}</div>
+    </details>
+    <details class="creator-detail-group">
+      <summary>Contact & Location</summary>
+      <div class="field-grid compact-field-grid">${contactFields}</div>
+    </details>
+    <details class="creator-detail-group" open>
+      <summary>Original Notes & Update Input</summary>
+      <div class="field-stack">${notesFields}</div>
+    </details>
+  `;
+}
+
+function renderDetail(user) {
+  state.selected = user;
+  detailName.textContent = user.name || "(No name)";
+  const evaluationFields = fieldGrid(
+    [
+      fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
+      fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
+      fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
+      fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
+      fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
+      fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
+      fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
+      fieldHtml("Follow-up Priority", chip(user.followUpPriority, PALETTES.priority[user.followUpPriority])),
+    ],
+    "No evaluation fields recorded.",
+  );
+  const profileFields = fieldGrid([
+    field("Email", user.email),
+    field("Country/Region", user.country),
+    field("Address", user.address),
+    field("Self-Owned Product", user.ownedProduct),
+    field("Exchange Product", user.exchangeProduct),
+    field("Profile", user.profile),
+  ]);
+  const noteFields = fieldGrid(
+    [
+      field("Description", user.description),
+      field("Resources", user.resources),
+      field("Notes", user.notes),
+      field("Extra Notes", user.extraNotes),
+      field("Extended Background", user.extendedBackground),
+      field("Raw Update Notes", user.updateInput),
+    ],
+    "No notes recorded.",
+  );
+  const followUpFields = fieldGrid(
+    [
+      field("Last Contact Date", user.lastContactDate),
+      field("Next Follow-up Date", user.nextFollowUpDate),
+      field("Follow-up Reason", user.followUpReason),
+      field("AI Suggestion Status", user.aiSuggestionStatus),
+      field("Last Parsed At", user.lastParsedAt),
+    ],
+    "No follow-up fields recorded.",
+  );
+  detailContent.innerHTML = `
+    <section class="detail-section detail-overview">
+      <div class="detail-overview-top">
+        <div>
+          <p class="eyebrow">Current Snapshot</p>
+          <h3>${escapeHtml(user.year || state.activeYear)} KOC Profile</h3>
+        </div>
+        ${chip(user.status || "No Status", PALETTES.status[user.status])}
+      </div>
+      <div class="detail-chip-row">
+        ${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}
+        ${renderChips(user.types, PALETTES.type)}
+      </div>
+      <p class="detail-summary">${escapeHtml(user.followUpReason || user.updateInput || user.description || user.notes || "No summary recorded yet.")}</p>
+    </section>
+    <section class="detail-section">
+      <h3>Evaluation</h3>
+      <div class="field-grid">
+        ${evaluationFields}
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>Profile</h3>
+      <div class="field-grid">
+        ${profileFields}
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>Notes</h3>
+      <div class="field-stack">
+        ${noteFields}
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>Follow-up</h3>
+      <div class="field-grid">
+        ${followUpFields}
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>Update Input - Write Here</h3>
+      <textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>
+      <div class="actions">
+        <button class="button primary" id="analyze-button">Analyze Update</button>
+        <button class="button" id="apply-button" disabled>Apply Preview</button>
+      </div>
+      <div id="suggestion-output"></div>
+    </section>
+  `;
+  detailPanel.classList.add("open");
+  detailPanel.setAttribute("aria-hidden", "false");
+  document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
+  document.querySelector("#apply-button").addEventListener("click", applySelected);
+}
+
+async function analyzeSelected() {
+  const updateInput = document.querySelector("#update-input").value;
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ row: state.selected, updateInput }),
+  });
+  if (response.status === 401) {
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    showLogin("Please enter the team password again.");
+    return;
+  }
+  const suggestion = await response.json();
+  state.currentSuggestion = suggestion;
+  const rows = Object.entries(suggestion.fields)
+    .map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(value)}</td></tr>`)
+    .join("");
+  document.querySelector("#suggestion-output").innerHTML = `
+    <table class="suggestion-table">
+      <thead><tr><th>Field</th><th>Suggested Value</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="meta">${escapeHtml(suggestion.summary)}</p>
+  `;
+  document.querySelector("#apply-button").disabled = false;
+}
+
+async function applySelected() {
+  const response = await fetch("/api/apply", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ row: state.selected, suggestion: state.currentSuggestion }),
+  });
+  if (response.status === 401) {
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    showLogin("Please enter the team password again.");
+    return;
+  }
+  const result = await response.json();
+  document.querySelector("#suggestion-output").insertAdjacentHTML(
+    "beforeend",
+    `<p class="state-message ${response.ok ? "" : "error"}">${escapeHtml(result.message)}</p>`,
+  );
+}
+
+function renderRules() {
+  const groups = [
+    ["User Level", PALETTES.level],
+    ["User Status", PALETTES.status],
+    ["User Type", PALETTES.type],
+    ["Content Feedback Quality", PALETTES.contentQuality],
+    ["Cooperation Level", PALETTES.cooperation],
+    ["Follow-up Priority", PALETTES.priority],
+  ];
+  document.querySelector("#rules-grid").innerHTML = groups
+    .map(
+      ([title, palette]) => `<section class="rules-card">
+        <h3>${title}</h3>
+        <div class="chip-list">${Object.entries(palette)
+          .map(([label, color]) => chip(label, color))
+          .join("")}</div>
+      </section>`,
+    )
+    .join("");
+}
+
+function setupTabs() {
+  document.querySelectorAll(".tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+      document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+      button.classList.add("active");
+      if (button.dataset.year) {
+        state.activeYear = button.dataset.year;
+        renderUsers();
+      }
+      document.querySelector(`#${button.dataset.view}-view`).classList.add("active");
+    });
+  });
+}
+
+function setupClicks() {
+  document.body.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-key]");
+    if (!button) return;
+    const user = state.users.find((item) => item.key === button.dataset.key);
+    if (user) {
+      renderDetail(user);
+      return;
+    }
+    const influencer = state.influencers.find((item) => item.key === button.dataset.key);
+    if (influencer) renderInfluencerInlineDetail(influencer);
+  });
+  document.querySelector("#close-detail").addEventListener("click", () => {
+    detailPanel.classList.remove("open");
+    detailPanel.setAttribute("aria-hidden", "true");
+  });
+}
+
+function setupLogin() {
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    loginMessage.textContent = "";
+
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: passwordInput.value }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.token) {
+      loginMessage.textContent = result.message || "Unable to sign in.";
+      return;
+    }
+
+    sessionStorage.setItem(SESSION_TOKEN_KEY, result.token);
+    passwordInput.value = "";
+    showApp();
+    await loadUsers();
+  });
+}
+
+async function loadUsers() {
+  try {
+    const response = await fetch("/api/users", {
+      headers: authHeaders(),
+    });
+    if (response.status === 401) {
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      showLogin("Please enter the team password.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    state.users = data.users.filter((user) => user.name || user.email || user.ownedProduct || user.updateInput);
+    state.usersByYear = {
+      2025: (data.usersByYear?.["2025"] || []).filter((user) => user.name || user.email || user.ownedProduct || user.updateInput),
+      2026: (data.usersByYear?.["2026"] || []).filter((user) => user.name || user.email || user.ownedProduct || user.updateInput),
+    };
+    state.influencers = (data.influencers || []).filter((user) => user.name || user.email || user.resources || user.updateInput);
+    state.today = data.today;
+    if (data.source?.warning) {
+      setMessage(
+        `Loaded ${state.users.length} KOC users and ${state.influencers.length} influencers. ${data.source.warning}`,
+        "warning",
+      );
+    } else if (data.source?.mode === "google_apps_script_2026") {
+      hideMessage();
+    } else {
+      hideMessage();
+    }
+    renderSummary();
+    renderToday();
+    renderUsers();
+    setupInfluencerOptions();
+    renderInfluencerSummary();
+    renderInfluencers();
+    renderRules();
+  } catch (error) {
+    setMessage(error instanceof Error ? error.message : "Unable to load Google Sheet data.", "error");
+  }
+}
+
+setupLogin();
+setupTabs();
+setupFilters();
+setupInfluencerFilters();
+setupClicks();
+
+if (sessionToken()) {
+  showApp();
+  loadUsers();
+} else {
+  showLogin();
+}
