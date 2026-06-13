@@ -18,6 +18,7 @@ const staticRoot = join(root, "static");
 const libRoot = join(root, "lib");
 const dataRoot = join(root, "data");
 const port = Number(process.env.PORT || 5174);
+const host = process.env.HOST || "0.0.0.0";
 const adminPassword = process.env.ADMIN_PASSWORD || "";
 const activeSessions = new Set();
 
@@ -434,6 +435,6 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`KOC Admin running at http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  console.log(`KOC Admin running on ${host}:${port}`);
 });
