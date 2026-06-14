@@ -74,10 +74,12 @@ The GitHub Pages version serves the static dashboard from `static/`.
 
 1. Deploy the updated Google Apps Script Web App.
 2. Copy the Web App URL.
-3. Put that URL in `static/config.js` as `appsScriptUrl`.
-4. Commit and push changes.
-5. In GitHub, open `Settings` -> `Pages`.
-6. Set the source to a GitHub Actions Pages workflow once `.github/workflows/pages.yml` is added.
+3. In GitHub, open `Settings` -> `Secrets and variables` -> `Actions`.
+4. Add repository secret `KOC_APPS_SCRIPT_URL` with the Web App URL.
+5. Keep `static/config.js` as a placeholder in GitHub; the Pages workflow injects the real URL while deploying.
+6. Commit and push changes.
+7. In GitHub, open `Settings` -> `Pages`.
+8. Set the source to `GitHub Actions`.
 
 The expected public URL is:
 

@@ -24,10 +24,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Prepare site
+        env:
+          KOC_APPS_SCRIPT_URL: ${{ secrets.KOC_APPS_SCRIPT_URL }}
         run: |
           mkdir -p dist
           cp -R static/* dist/
           cp -R lib dist/lib
+          if [ -n "$KOC_APPS_SCRIPT_URL" ]; then
+            cat > dist/config.js <<EOF
+          export const KOC_CONFIG = {
+            apiMode: "apps-script",
+            appsScriptUrl: "$KOC_APPS_SCRIPT_URL",
+          };
+          EOF
+          fi
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
