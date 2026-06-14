@@ -1,4 +1,5 @@
-import { OPTIONS, PALETTES } from "/lib/koc-domain.mjs";
+import { OPTIONS, PALETTES } from "./lib/koc-domain.mjs";
+import { analyzeUpdate, applyFields, loadDashboard, login } from "./api-client.js";
 
 const state = {
   users: [],
@@ -50,11 +51,6 @@ const detailContent = document.querySelector("#detail-content");
 
 function sessionToken() {
   return sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
-}
-
-function authHeaders(extra = {}) {
-  const token = sessionToken();
-  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
 
 function showLogin(text = "") {
@@ -537,17 +533,7 @@ function renderDetail(user) {
 
 async function analyzeSelected() {
   const updateInput = document.querySelector("#update-input").value;
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ row: state.selected, updateInput }),
-  });
-  if (response.status === 401) {
-    sessionStorage.removeItem(SESSION_TOKEN_KEY);
-    showLogin("Please enter the team password again.");
-    return;
-  }
-  const suggestion = await response.json();
+  const suggestion = await analyzeUpdate(state.selected, updateInput, sessionToken());
   state.currentSuggestion = suggestion;
   const rows = Object.entries(suggestion.fields)
     .map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(value)}</td></tr>`)
@@ -563,20 +549,10 @@ async function analyzeSelected() {
 }
 
 async function applySelected() {
-  const response = await fetch("/api/apply", {
-    method: "POST",
-    headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ row: state.selected, suggestion: state.currentSuggestion }),
-  });
-  if (response.status === 401) {
-    sessionStorage.removeItem(SESSION_TOKEN_KEY);
-    showLogin("Please enter the team password again.");
-    return;
-  }
-  const result = await response.json();
+  const result = await applyFields({ row: state.selected, suggestion: state.currentSuggestion }, sessionToken());
   document.querySelector("#suggestion-output").insertAdjacentHTML(
     "beforeend",
-    `<p class="state-message ${response.ok ? "" : "error"}">${escapeHtml(result.message)}</p>`,
+    `<p class="state-message">${escapeHtml(result.message)}</p>`,
   );
 }
 
@@ -639,14 +615,9 @@ function setupLogin() {
     event.preventDefault();
     loginMessage.textContent = "";
 
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: passwordInput.value }),
-    });
-    const result = await response.json().catch(() => ({}));
+    const result = await login("", passwordInput.value);
 
-    if (!response.ok || !result.token) {
+    if (!result.token) {
       loginMessage.textContent = result.message || "Unable to sign in.";
       return;
     }
@@ -660,16 +631,7 @@ function setupLogin() {
 
 async function loadUsers() {
   try {
-    const response = await fetch("/api/users", {
-      headers: authHeaders(),
-    });
-    if (response.status === 401) {
-      sessionStorage.removeItem(SESSION_TOKEN_KEY);
-      showLogin("Please enter the team password.");
-      return;
-    }
-    if (!response.ok) throw new Error(await response.text());
-    const data = await response.json();
+    const data = await loadDashboard(sessionToken());
     state.users = data.users.filter((user) => user.name || user.email || user.ownedProduct || user.updateInput);
     state.usersByYear = {
       2025: (data.usersByYear?.["2025"] || []).filter((user) => user.name || user.email || user.ownedProduct || user.updateInput),
@@ -695,6 +657,11 @@ async function loadUsers() {
     renderInfluencers();
     renderRules();
   } catch (error) {
+    if (error.status === 401) {
+      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      showLogin("Please enter the team password.");
+      return;
+    }
     setMessage(error instanceof Error ? error.message : "Unable to load Google Sheet data.", "error");
   }
 }
