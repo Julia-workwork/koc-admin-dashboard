@@ -1,4 +1,11 @@
-import { OPTIONS, PALETTES, buildTodayBuckets, normalizeKocRow } from "./lib/koc-domain.mjs";
+import {
+  OPTIONS,
+  PALETTES,
+  buildTodayBuckets,
+  canRoleEditRecords,
+  canRoleManageRules,
+  normalizeKocRow,
+} from "./lib/koc-domain.mjs";
 import { analyzeUpdate, applyFields, loadDashboard, login } from "./api-client.js";
 
 const state = {
@@ -63,6 +70,18 @@ function currentAccount() {
   } catch {
     return null;
   }
+}
+
+function currentRole() {
+  return currentAccount()?.role || "Viewer";
+}
+
+function canEditRecords() {
+  return canRoleEditRecords(currentRole());
+}
+
+function canManageRulesUi() {
+  return canRoleManageRules(currentRole());
 }
 
 function setSession(token, account) {
@@ -500,6 +519,20 @@ function renderDetail(user) {
     ],
     "No follow-up fields recorded.",
   );
+  const editSection = canEditRecords()
+    ? `<section class="detail-section">
+      <h3>Update Input - Write Here</h3>
+      <textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>
+      <div class="actions">
+        <button class="button primary" id="analyze-button">Analyze Update</button>
+        <button class="button" id="apply-button" disabled>Apply Preview</button>
+      </div>
+      <div id="suggestion-output"></div>
+    </section>`
+    : `<section class="detail-section readonly-note">
+      <h3>Read-only access</h3>
+      <p>Your account can view this record, but cannot edit or write updates.</p>
+    </section>`;
   detailContent.innerHTML = `
     <section class="detail-section detail-overview">
       <div class="detail-overview-top">
@@ -539,20 +572,14 @@ function renderDetail(user) {
         ${followUpFields}
       </div>
     </section>
-    <section class="detail-section">
-      <h3>Update Input - Write Here</h3>
-      <textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>
-      <div class="actions">
-        <button class="button primary" id="analyze-button">Analyze Update</button>
-        <button class="button" id="apply-button" disabled>Apply Preview</button>
-      </div>
-      <div id="suggestion-output"></div>
-    </section>
+    ${editSection}
   `;
   detailPanel.classList.add("open");
   detailPanel.setAttribute("aria-hidden", "false");
-  document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
-  document.querySelector("#apply-button").addEventListener("click", applySelected);
+  if (canEditRecords()) {
+    document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
+    document.querySelector("#apply-button").addEventListener("click", applySelected);
+  }
 }
 
 async function analyzeSelected() {
@@ -599,6 +626,15 @@ function renderRules() {
       </section>`,
     )
     .join("");
+  if (!canManageRulesUi()) {
+    document.querySelector("#rules-grid").insertAdjacentHTML(
+      "beforeend",
+      `<section class="rules-card readonly-note">
+        <h3>Rule management</h3>
+        <p>Your account can view rules, but only Admin can change dropdowns, colors, and account settings.</p>
+      </section>`,
+    );
+  }
 }
 
 function rowsFromSheetValues(sheetPayload, year) {

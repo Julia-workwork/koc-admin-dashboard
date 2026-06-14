@@ -285,6 +285,12 @@ main {
   color: #6b4b00;
 }
 
+.readonly-note {
+  border-style: dashed;
+  background: #f8fbff;
+  color: #5f6c7d;
+}
+
 .state-message.is-hidden {
   display: none;
 }
