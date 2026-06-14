@@ -1,12 +1,13 @@
 import {
   OPTIONS,
   PALETTES,
+  analyzeUpdateNote,
   buildTodayBuckets,
   canRoleEditRecords,
   canRoleManageRules,
   normalizeKocRow,
 } from "./lib/koc-domain.mjs";
-import { analyzeUpdate, applyFields, loadDashboard, login } from "./api-client.js";
+import { applyFields, loadDashboard, login } from "./api-client.js";
 
 const state = {
   users: [],
@@ -155,6 +156,12 @@ function renderChips(values, palette) {
 
 function optionList(items) {
   return ["", ...items].map((item) => `<option value="${escapeHtml(item)}">${item || "All"}</option>`).join("");
+}
+
+function editOptionList(items, selected = "") {
+  return ["", ...items]
+    .map((item) => `<option value="${escapeHtml(item)}" ${item === selected ? "selected" : ""}>${escapeHtml(item)}</option>`)
+    .join("");
 }
 
 function uniqueOptions(values) {
@@ -521,9 +528,45 @@ function renderDetail(user) {
   );
   const editSection = canEditRecords()
     ? `<section class="detail-section">
+      <h3>Editable Operations</h3>
+      <div class="edit-form">
+        <label>
+          <span>User Level</span>
+          <select id="edit-user-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>
+        </label>
+        <label>
+          <span>User Status</span>
+          <select id="edit-user-status">${editOptionList(OPTIONS.status, user.status)}</select>
+        </label>
+        <label>
+          <span>User Type</span>
+          <input id="edit-user-type" value="${escapeHtml(user.types.join(", "))}" />
+        </label>
+        <label>
+          <span>Content Feedback Quality</span>
+          <select id="edit-content-quality">${editOptionList(OPTIONS.quality, user.contentQuality)}</select>
+        </label>
+        <label>
+          <span>Cooperation Level</span>
+          <select id="edit-cooperation">${editOptionList(OPTIONS.quality, user.cooperation)}</select>
+        </label>
+        <label>
+          <span>Next Follow-up Date</span>
+          <input id="edit-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />
+        </label>
+        <label class="wide">
+          <span>Follow-up Reason</span>
+          <input id="edit-follow-up-reason" value="${escapeHtml(user.followUpReason)}" />
+        </label>
+        <label class="wide">
+          <span>Notes</span>
+          <textarea id="edit-notes">${escapeHtml(user.notes)}</textarea>
+        </label>
+      </div>
       <h3>Update Input - Write Here</h3>
       <textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>
       <div class="actions">
+        <button class="button primary" id="save-record-button">Save Record</button>
         <button class="button primary" id="analyze-button">Analyze Update</button>
         <button class="button" id="apply-button" disabled>Apply Preview</button>
       </div>
@@ -579,17 +622,69 @@ function renderDetail(user) {
   if (canEditRecords()) {
     document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
     document.querySelector("#apply-button").addEventListener("click", applySelected);
+    document.querySelector("#save-record-button").addEventListener("click", saveSelectedRecord);
+  }
+}
+
+function selectedKocSheetName(user) {
+  return user.sheetName || (user.year === "2025" ? "2025 KOC" : "2026 KOC");
+}
+
+function buildKocUpdatePayload(user) {
+  return {
+    recordType: "koc",
+    sheetName: selectedKocSheetName(user),
+    rowNumber: user.rowNumber,
+    fields: {
+      "Update Input - Write Here": document.querySelector("#update-input")?.value || "",
+      "User Level (S/A/B/C/TBD)": document.querySelector("#edit-user-level")?.value || user.level || "TBD",
+      "User Status": document.querySelector("#edit-user-status")?.value || user.status || "",
+      "User Type": document.querySelector("#edit-user-type")?.value || "",
+      "Content Feedback Quality": document.querySelector("#edit-content-quality")?.value || user.contentQuality || "",
+      "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
+      "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",
+      "Follow-up Reason": document.querySelector("#edit-follow-up-reason")?.value || user.followUpReason || "",
+      Notes: document.querySelector("#edit-notes")?.value || user.notes || "",
+    },
+  };
+}
+
+function suggestionOutput() {
+  return document.querySelector("#suggestion-output");
+}
+
+async function saveSelectedRecord() {
+  try {
+    const result = await applyFields(buildKocUpdatePayload(state.selected), sessionToken());
+    suggestionOutput().insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message">Saved ${Object.keys(result.fields || {}).length} fields.</p>`,
+    );
+    await loadUsers();
+  } catch (error) {
+    suggestionOutput().insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to save record.")}</p>`,
+    );
   }
 }
 
 async function analyzeSelected() {
   const updateInput = document.querySelector("#update-input").value;
-  const suggestion = await analyzeUpdate(state.selected, updateInput, sessionToken());
+  const suggestion = analyzeUpdateNote({
+    ...state.selected,
+    updateInput,
+    raw: {
+      ...state.selected.raw,
+      "Raw Update Notes": updateInput,
+      "Update Input - Write Here": updateInput,
+    },
+  });
   state.currentSuggestion = suggestion;
   const rows = Object.entries(suggestion.fields)
     .map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(value)}</td></tr>`)
     .join("");
-  document.querySelector("#suggestion-output").innerHTML = `
+  suggestionOutput().innerHTML = `
     <table class="suggestion-table">
       <thead><tr><th>Field</th><th>Suggested Value</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -600,11 +695,27 @@ async function analyzeSelected() {
 }
 
 async function applySelected() {
-  const result = await applyFields({ row: state.selected, suggestion: state.currentSuggestion }, sessionToken());
-  document.querySelector("#suggestion-output").insertAdjacentHTML(
-    "beforeend",
-    `<p class="state-message">${escapeHtml(result.message)}</p>`,
-  );
+  try {
+    const result = await applyFields(
+      {
+        recordType: "koc",
+        sheetName: selectedKocSheetName(state.selected),
+        rowNumber: state.selected.rowNumber,
+        fields: state.currentSuggestion?.fields || {},
+      },
+      sessionToken(),
+    );
+    suggestionOutput().insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message">Applied ${Object.keys(result.fields || {}).length} approved fields.</p>`,
+    );
+    await loadUsers();
+  } catch (error) {
+    suggestionOutput().insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to apply preview.")}</p>`,
+    );
+  }
 }
 
 function renderRules() {
