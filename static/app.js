@@ -301,7 +301,7 @@ function channelColor(channel) {
 }
 
 function productLabel(user) {
-  return user.exchangeProduct || user.ownedProduct || "TBD";
+  return user.product || user.exchangeProduct || user.ownedProduct || "TBD";
 }
 
 function nextAction(user) {
@@ -310,6 +310,39 @@ function nextAction(user) {
   if (user.status === "In Collaboration") return "Track collaboration progress";
   if (user.status === "Ready to Follow Up") return "Send or continue outreach";
   return user.updateInput || "Review creator fit";
+}
+
+function buildInfluencerUpdatePayload(user) {
+  return {
+    recordType: "influencer",
+    sheetName: user.sheetName || "Influencers",
+    rowNumber: user.rowNumber,
+    fields: {
+      Level: document.querySelector("#edit-influencer-level")?.value || user.level || "",
+      Status: document.querySelector("#edit-influencer-status")?.value || user.status || "",
+      Product: document.querySelector("#edit-influencer-product")?.value || "",
+      "Next Action": document.querySelector("#edit-influencer-next-action")?.value || "",
+      Notes: document.querySelector("#edit-influencer-notes")?.value || user.notes || "",
+      "Next Follow-up Date": document.querySelector("#edit-influencer-next-follow-up")?.value || user.nextFollowUpDate || "",
+      "Update Input - Write Here": document.querySelector("#edit-influencer-update-input")?.value || user.updateInput || "",
+    },
+  };
+}
+
+async function saveInfluencerRecord(user) {
+  try {
+    const result = await applyFields(buildInfluencerUpdatePayload(user), sessionToken());
+    influencerInlineDetail.insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message">Saved ${Object.keys(result.fields || {}).length} fields.</p>`,
+    );
+    await loadUsers();
+  } catch (error) {
+    influencerInlineDetail.insertAdjacentHTML(
+      "beforeend",
+      `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to save influencer.")}</p>`,
+    );
+  }
 }
 
 function renderInfluencerSummary() {
@@ -430,6 +463,45 @@ function renderInfluencerInlineDetail(user) {
     ],
     "No notes recorded.",
   );
+  const editSection = canEditRecords()
+    ? `<section class="creator-note influencer-edit-section">
+        <span>Edit Collaboration</span>
+        <div class="edit-form single-column">
+          <label>
+            <span>Level</span>
+            <select id="edit-influencer-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>
+          </label>
+          <label>
+            <span>Status</span>
+            <select id="edit-influencer-status">${editOptionList(OPTIONS.status, user.status)}</select>
+          </label>
+          <label>
+            <span>Product</span>
+            <input id="edit-influencer-product" value="${escapeHtml(productLabel(user) === "TBD" ? "" : productLabel(user))}" />
+          </label>
+          <label>
+            <span>Next Action</span>
+            <input id="edit-influencer-next-action" value="${escapeHtml(nextAction(user))}" />
+          </label>
+          <label>
+            <span>Latest Note / Notes</span>
+            <textarea id="edit-influencer-notes">${escapeHtml(user.notes)}</textarea>
+          </label>
+          <label>
+            <span>Next Follow-up Date</span>
+            <input id="edit-influencer-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />
+          </label>
+          <label>
+            <span>Update Input - Write Here</span>
+            <textarea id="edit-influencer-update-input">${escapeHtml(user.updateInput)}</textarea>
+          </label>
+        </div>
+        <button class="button primary" id="save-influencer-button" type="button">Save Influencer</button>
+      </section>`
+    : `<section class="creator-note readonly-note">
+        <span>Read-only access</span>
+        <p>Your account can view this creator, but cannot edit or write updates.</p>
+      </section>`;
   influencerInlineDetail.innerHTML = `
     <p class="eyebrow">Selected Creator</p>
     <div class="creator-detail-head">
@@ -478,7 +550,9 @@ function renderInfluencerInlineDetail(user) {
       <summary>Original Notes & Update Input</summary>
       <div class="field-stack">${notesFields}</div>
     </details>
+    ${editSection}
   `;
+  document.querySelector("#save-influencer-button")?.addEventListener("click", () => saveInfluencerRecord(user));
 }
 
 function renderDetail(user) {

@@ -310,6 +310,10 @@ main {
   grid-column: 1 / -1;
 }
 
+.edit-form.single-column {
+  grid-template-columns: 1fr;
+}
+
 .edit-form input,
 .edit-form select,
 .edit-form textarea {
@@ -326,6 +330,10 @@ main {
 .edit-form textarea {
   min-height: 92px;
   resize: vertical;
+}
+
+.influencer-edit-section .button {
+  margin-top: 12px;
 }
 
 .state-message.is-hidden {
