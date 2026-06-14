@@ -76,6 +76,25 @@ textarea {
   margin-top: 16px;
 }
 
+.login-card label {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.login-card input {
+  min-height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0 14px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .login-message {
   min-height: 20px;
   margin: 14px 0 0;
@@ -85,6 +104,7 @@ textarea {
 }
 
 .app-header {
+  position: relative;
   min-height: 310px;
   display: grid;
   align-content: start;
@@ -118,6 +138,26 @@ textarea {
   height: 8px;
   border-radius: 999px;
   background: var(--brand);
+}
+
+.account-bar {
+  position: absolute;
+  top: 24px;
+  right: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: #ffffff;
+  font-weight: 850;
 }
 
 .hero-row {
@@ -214,6 +254,12 @@ main {
 .button.primary {
   border-color: var(--black);
   background: var(--black);
+  color: #ffffff;
+}
+
+.button.ghost {
+  border-color: rgb(255 255 255 / 28%);
+  background: rgb(255 255 255 / 8%);
   color: #ffffff;
 }
 

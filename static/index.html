@@ -12,10 +12,14 @@
       <form id="login-form" class="login-card">
         <p class="eyebrow">Internal Team Access</p>
         <h1>KOC Admin</h1>
-        <p class="login-note">Enter the team password to view user operations data.</p>
+        <p class="login-note">Sign in with your team account to view user operations data.</p>
+        <label>
+          <span>Username</span>
+          <input id="username-input" type="text" autocomplete="username" placeholder="julia" />
+        </label>
         <label>
           <span>Password</span>
-          <input id="password-input" type="password" autocomplete="current-password" placeholder="Team password" />
+          <input id="password-input" type="password" autocomplete="current-password" placeholder="Password" />
         </label>
         <button class="button primary" type="submit">Enter Dashboard</button>
         <p id="login-message" class="login-message"></p>
@@ -28,6 +32,10 @@
         <span>Data Sync <b aria-hidden="true"></b></span>
         <span>Julia</span>
       </nav>
+      <div class="account-bar">
+        <span id="account-pill" class="account-pill"></span>
+        <button id="logout-button" class="button ghost" type="button">Log out</button>
+      </div>
 
       <div class="hero-row">
         <div class="hero-copy">

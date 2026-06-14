@@ -29,11 +29,15 @@ const state = {
 };
 
 const SESSION_TOKEN_KEY = "koc_admin_session_token";
+const SESSION_ACCOUNT_KEY = "koc_admin_account";
 
 const loginView = document.querySelector("#login-view");
 const loginForm = document.querySelector("#login-form");
 const loginMessage = document.querySelector("#login-message");
+const usernameInput = document.querySelector("#username-input");
 const passwordInput = document.querySelector("#password-input");
+const accountPill = document.querySelector("#account-pill");
+const logoutButton = document.querySelector("#logout-button");
 const appShell = document.querySelectorAll(".app-shell");
 const message = document.querySelector("#state-message");
 const summaryStrip = document.querySelector("#summary-strip");
@@ -53,13 +57,31 @@ function sessionToken() {
   return sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
 }
 
+function currentAccount() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SESSION_ACCOUNT_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function setSession(token, account) {
+  sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  sessionStorage.setItem(SESSION_ACCOUNT_KEY, JSON.stringify(account));
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  sessionStorage.removeItem(SESSION_ACCOUNT_KEY);
+}
+
 function showLogin(text = "") {
   loginView.hidden = false;
   appShell.forEach((element) => {
     element.hidden = true;
   });
   loginMessage.textContent = text;
-  passwordInput.focus();
+  usernameInput.focus();
 }
 
 function showApp() {
@@ -67,6 +89,8 @@ function showApp() {
   appShell.forEach((element) => {
     element.hidden = false;
   });
+  const account = currentAccount();
+  accountPill.textContent = account ? `${account.displayName} · ${account.role}` : "";
 }
 
 function setMessage(text, type = "") {
@@ -615,17 +639,29 @@ function setupLogin() {
     event.preventDefault();
     loginMessage.textContent = "";
 
-    const result = await login("", passwordInput.value);
+    try {
+      const result = await login(usernameInput.value, passwordInput.value);
 
-    if (!result.token) {
-      loginMessage.textContent = result.message || "Unable to sign in.";
-      return;
+      if (!result.token) {
+        loginMessage.textContent = result.message || "Unable to sign in.";
+        return;
+      }
+
+      setSession(
+        result.token,
+        result.account || {
+          username: usernameInput.value || "local",
+          displayName: usernameInput.value || "Local",
+          role: "Admin",
+        },
+      );
+      usernameInput.value = "";
+      passwordInput.value = "";
+      showApp();
+      await loadUsers();
+    } catch (error) {
+      loginMessage.textContent = error instanceof Error ? error.message : "Unable to sign in.";
     }
-
-    sessionStorage.setItem(SESSION_TOKEN_KEY, result.token);
-    passwordInput.value = "";
-    showApp();
-    await loadUsers();
   });
 }
 
@@ -658,7 +694,7 @@ async function loadUsers() {
     renderRules();
   } catch (error) {
     if (error.status === 401) {
-      sessionStorage.removeItem(SESSION_TOKEN_KEY);
+      clearSession();
       showLogin("Please enter the team password.");
       return;
     }
@@ -671,6 +707,10 @@ setupTabs();
 setupFilters();
 setupInfluencerFilters();
 setupClicks();
+logoutButton.addEventListener("click", () => {
+  clearSession();
+  showLogin("Signed out.");
+});
 
 if (sessionToken()) {
   showApp();
