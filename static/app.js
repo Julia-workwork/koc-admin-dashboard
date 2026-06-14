@@ -1,4 +1,4 @@
-import { OPTIONS, PALETTES } from "./lib/koc-domain.mjs";
+import { OPTIONS, PALETTES, buildTodayBuckets, normalizeKocRow } from "./lib/koc-domain.mjs";
 import { analyzeUpdate, applyFields, loadDashboard, login } from "./api-client.js";
 
 const state = {
@@ -601,6 +601,52 @@ function renderRules() {
     .join("");
 }
 
+function rowsFromSheetValues(sheetPayload, year) {
+  const values = sheetPayload?.values || [];
+  const headerRowIndex = values.findIndex((row) => row.includes("Name"));
+  if (headerRowIndex === -1) return [];
+
+  const headers = values[headerRowIndex];
+  return values
+    .slice(headerRowIndex + 1)
+    .map((cells, index) => {
+      const raw = Object.fromEntries(headers.map((header, cellIndex) => [header, cells[cellIndex] ?? ""]));
+      return {
+        ...normalizeKocRow(raw, index + headerRowIndex + 2),
+        sheetName: sheetPayload.sheetName,
+        year,
+        key: `${year}-${index + headerRowIndex + 2}`,
+      };
+    })
+    .filter((row) => Object.values(row.raw).some((value) => String(value ?? "").trim()));
+}
+
+function normalizeAppsScriptDashboard(data) {
+  if (!data?.usersByYear) return data;
+
+  const users2025 = rowsFromSheetValues(data.usersByYear["2025"], "2025");
+  const users2026 = rowsFromSheetValues(data.usersByYear["2026"], "2026");
+  const influencers = rowsFromSheetValues(data.influencers, "Influencers").map((user) => ({
+    ...user,
+    key: `influencers-${user.rowNumber}`,
+  }));
+  const users = [...users2025, ...users2026];
+
+  return {
+    usersByYear: {
+      2025: users2025,
+      2026: users2026,
+    },
+    influencers,
+    users,
+    today: buildTodayBuckets(users),
+    source: {
+      mode: "google_apps_script_static",
+      updatedAt: data.updatedAt,
+    },
+  };
+}
+
 function setupTabs() {
   document.querySelectorAll(".tab").forEach((button) => {
     button.addEventListener("click", () => {
@@ -667,7 +713,8 @@ function setupLogin() {
 
 async function loadUsers() {
   try {
-    const data = await loadDashboard(sessionToken());
+    const raw = await loadDashboard(sessionToken());
+    const data = raw.data ? normalizeAppsScriptDashboard(raw.data) : raw;
     state.users = data.users.filter((user) => user.name || user.email || user.ownedProduct || user.updateInput);
     state.usersByYear = {
       2025: (data.usersByYear?.["2025"] || []).filter((user) => user.name || user.email || user.ownedProduct || user.updateInput),
