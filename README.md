@@ -62,7 +62,52 @@ Do not commit local user data or private connection files. They are ignored by `
 - `google-sheet-csv-url.txt`
 - `.env`
 
-For deployment, use a platform that can run a Node server and set environment variables, such as Render or Railway. GitHub Pages is not enough because this app needs server routes for password login and protected data APIs.
+The preferred deployment direction is GitHub Pages plus Google Apps Script:
+
+- GitHub Pages serves the static dashboard.
+- Google Apps Script handles login, roles, protected reads, and controlled writes.
+- Render can stay available as a backup Node deployment during migration.
+
+## GitHub Pages Deployment
+
+The GitHub Pages version serves the static dashboard from `static/`.
+
+1. Deploy the updated Google Apps Script Web App.
+2. Copy the Web App URL.
+3. Put that URL in `static/config.js` as `appsScriptUrl`.
+4. Commit and push changes.
+5. In GitHub, open `Settings` -> `Pages`.
+6. Set the source to a GitHub Actions Pages workflow once `.github/workflows/pages.yml` is added.
+
+The expected public URL is:
+
+```text
+https://julia-workwork.github.io/koc-admin-dashboard/
+```
+
+Do not commit real passwords to GitHub. The Apps Script Web App URL is visible to the browser in a static deployment, so Apps Script must enforce login and permissions for all protected actions.
+
+## Apps Script Accounts
+
+Set Script Property `KOC_ACCOUNTS_JSON` in the Apps Script project:
+
+```json
+[
+  {"username":"julia","displayName":"Julia","role":"Admin","password":"change-this","active":true},
+  {"username":"editor01","displayName":"Editor 01","role":"Editor","password":"change-this","active":true},
+  {"username":"viewer01","displayName":"Viewer 01","role":"Viewer","password":"change-this","active":true}
+]
+```
+
+Roles:
+
+- `Admin`: can view, edit records, apply updates, and later manage rules/accounts.
+- `Editor`: can view and update KOC or Influencer records.
+- `Viewer`: can view only.
+
+## Render Backup Deployment
+
+Render can still run the Node server as a backup while GitHub Pages is being tested.
 
 Production start command:
 
