@@ -14,6 +14,7 @@ google-sheet-csv-url.txt
 npm-debug.log*
 
 # Design previews generated during local iteration.
+.superpowers/
 banner-inspired-mockup.png
 banner-ui-full-page-mockup.png
 design-modern-saas-preview.png
