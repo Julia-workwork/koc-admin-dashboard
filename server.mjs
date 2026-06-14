@@ -318,6 +318,11 @@ async function handleLogin(req, res) {
   sendJson(res, 200, {
     status: "ok",
     token,
+    account: {
+      username: body.username || "local",
+      displayName: body.username || "Local",
+      role: "Admin",
+    },
   });
 }
 
