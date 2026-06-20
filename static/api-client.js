@@ -6,6 +6,25 @@ function isAppsScriptConfigured() {
   return Boolean(KOC_CONFIG.appsScriptUrl && KOC_CONFIG.appsScriptUrl !== PLACEHOLDER_APPS_SCRIPT_URL);
 }
 
+export function isAuthenticationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    error?.status === 401 ||
+    error?.status === "authorization_required" ||
+    message.includes("sign in again") ||
+    message.includes("session expired") ||
+    message.includes("unauthorized")
+  );
+}
+
+export function messageForApiFailure({ status, contentType = "", fallback = "Request failed." } = {}) {
+  if (String(contentType).includes("text/html")) {
+    return "Google Apps Script returned an error page. Please check the web app deployment and try signing in again.";
+  }
+  if (status) return `${fallback} (HTTP ${status})`;
+  return fallback;
+}
+
 function shouldUseLocalApi() {
   if (KOC_CONFIG.apiMode === "local") return true;
   if (KOC_CONFIG.apiMode === "apps-script") return false;
@@ -22,9 +41,20 @@ async function postAppsScript(action, payload = {}) {
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, ...payload }),
   });
-  const data = await response.json().catch(() => ({}));
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    const error = new Error(messageForApiFailure({ status: response.status, contentType }));
+    error.status = response.status;
+    throw error;
+  }
   if (!response.ok || data.status === "error") {
-    const error = new Error(data.message || "Request failed.");
+    const error = new Error(
+      data.message || messageForApiFailure({ status: response.status, contentType, fallback: "Request failed." }),
+    );
     error.status = data.statusCode || response.status;
     throw error;
   }

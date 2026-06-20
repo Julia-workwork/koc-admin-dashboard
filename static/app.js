@@ -7,7 +7,7 @@ import {
   canRoleManageRules,
   normalizeKocRow,
 } from "./lib/koc-domain.mjs";
-import { applyFields, loadDashboard, login } from "./api-client.js";
+import { applyFields, isAuthenticationError, loadDashboard, login } from "./api-client.js";
 
 const state = {
   users: [],
@@ -961,7 +961,7 @@ async function loadUsers() {
     renderInfluencers();
     renderRules();
   } catch (error) {
-    if (error.status === 401) {
+    if (isAuthenticationError(error)) {
       clearSession();
       showLogin("Please enter the team password.");
       return;
