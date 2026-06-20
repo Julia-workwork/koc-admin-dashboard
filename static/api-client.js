@@ -25,35 +25,11 @@ export function messageForApiFailure({ status, contentType = "", fallback = "Req
   return fallback;
 }
 
-function shouldUseLocalApi() {
-  if (KOC_CONFIG.apiMode === "local") return true;
-  if (KOC_CONFIG.apiMode === "apps-script") return false;
-  return !isAppsScriptConfigured() || !location.hostname.endsWith("github.io");
-}
-
-async function postAppsScript(action, payload = {}) {
-  if (!isAppsScriptConfigured()) {
-    throw new Error("Google Apps Script URL is not configured.");
-  }
-
-  const response = await fetch(KOC_CONFIG.appsScriptUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, ...payload }),
-  });
-  const contentType = response.headers.get("content-type") || "";
-  const text = await response.text();
-  let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    const error = new Error(messageForApiFailure({ status: response.status, contentType }));
-    error.status = response.status;
-    throw error;
-  }
-  if (!response.ok || data.status === "error") {
+export function validateAppsScriptData(data, response = {}) {
+  const responseOk = response.ok ?? true;
+  if (!responseOk || data.status === "error") {
     const error = new Error(
-      data.message || messageForApiFailure({ status: response.status, contentType, fallback: "Request failed." }),
+      data.message || messageForApiFailure({ status: response.status, contentType: response.contentType, fallback: "Request failed." }),
     );
     error.status = data.statusCode || response.status;
     throw error;
@@ -64,6 +40,93 @@ async function postAppsScript(action, payload = {}) {
     throw error;
   }
   return data;
+}
+
+export function buildJsonpUrl(baseUrl, action, payload = {}) {
+  const params = new URLSearchParams();
+  params.set("action", action);
+  if (payload.callback) params.set("callback", String(payload.callback));
+  const requestPayload = { ...payload };
+  delete requestPayload.callback;
+  params.set("payload", JSON.stringify(requestPayload));
+  return `${baseUrl}?${params.toString()}`;
+}
+
+function getJsonpCallbackName() {
+  return `__kocJsonp${Date.now()}${Math.floor(Math.random() * 100000)}`;
+}
+
+function getBrowserDocument() {
+  return typeof document === "undefined" ? null : document;
+}
+
+function shouldUseLocalApi() {
+  if (KOC_CONFIG.apiMode === "local") return true;
+  if (KOC_CONFIG.apiMode === "apps-script") return false;
+  return !isAppsScriptConfigured() || !location.hostname.endsWith("github.io");
+}
+
+function jsonpAppsScript(action, payload = {}) {
+  const pageDocument = getBrowserDocument();
+  if (!pageDocument || typeof window === "undefined") {
+    return Promise.reject(new Error("JSONP fallback is only available in a browser."));
+  }
+
+  return new Promise((resolve, reject) => {
+    const callbackName = getJsonpCallbackName();
+    const script = pageDocument.createElement("script");
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Google Apps Script request timed out. Please try again."));
+    }, 20000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (data) => {
+      cleanup();
+      try {
+        resolve(validateAppsScriptData(data || {}, { ok: true }));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Google Apps Script request was blocked. Please allow script.google.com or try another browser."));
+    };
+    script.src = buildJsonpUrl(KOC_CONFIG.appsScriptUrl, action, { ...payload, callback: callbackName });
+    pageDocument.head.appendChild(script);
+  });
+}
+
+async function postAppsScript(action, payload = {}) {
+  if (!isAppsScriptConfigured()) {
+    throw new Error("Google Apps Script URL is not configured.");
+  }
+
+  let response;
+  try {
+    response = await fetch(KOC_CONFIG.appsScriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action, ...payload }),
+    });
+  } catch (error) {
+    return jsonpAppsScript(action, payload);
+  }
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    return jsonpAppsScript(action, payload);
+  }
+  return validateAppsScriptData(data, { ok: response.ok, status: response.status, contentType });
 }
 
 async function postLocal(path, payload = {}, token = "") {

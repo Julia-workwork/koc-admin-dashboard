@@ -58,27 +58,28 @@ function doPost(e) {
 }
 
 function routeRequest(e, method) {
+  const params = e && e.parameter ? e.parameter : {};
   try {
-    const params = e && e.parameter ? e.parameter : {};
     const body = parseBody(e);
     const action = body.action || params.action || legacyAction(params);
 
-    if (action === 'health') return jsonOutput({ status: 'ok', app: 'koc-admin-dashboard' });
-    if (action === 'login') return handleLogin(body);
+    if (action === 'health') return outputResponse({ status: 'ok', app: 'koc-admin-dashboard' }, params);
+    if (action === 'login') return handleLogin(readRequestData(body, params), params);
 
-    const session = requireSession(body.token || params.token);
+    const requestData = readRequestData(body, params);
+    const session = requireSession(requestData.token || params.token);
 
-    if (action === 'users') return jsonOutput({ status: 'ok', account: publicAccount(session), data: readDashboardData() });
-    if (action === 'sheet') return jsonOutput(readSheetValues(params.sheet));
-    if (action === 'apply') return handleApply(session, body);
+    if (action === 'users') return outputResponse({ status: 'ok', account: publicAccount(session), data: readDashboardData() }, params);
+    if (action === 'sheet') return outputResponse(readSheetValues(params.sheet), params);
+    if (action === 'apply') return handleApply(session, requestData, params);
 
-    return jsonOutput({ status: 'not_found', message: 'Unknown action.' });
+    return outputResponse({ status: 'not_found', message: 'Unknown action.' }, params);
   } catch (error) {
-    return jsonOutput({
+    return outputResponse({
       status: 'error',
       message: String(error && error.message ? error.message : error),
       statusCode: error.statusCode || 500,
-    });
+    }, params);
   }
 }
 
@@ -95,7 +96,18 @@ function parseBody(e) {
   }
 }
 
-function handleLogin(body) {
+function readRequestData(body, params) {
+  if (params.payload) {
+    try {
+      return JSON.parse(params.payload);
+    } catch (error) {
+      throw withStatus(new Error('Invalid JSON payload.'), 400);
+    }
+  }
+  return body;
+}
+
+function handleLogin(body, params) {
   const username = String(body.username || '').trim();
   const password = String(body.password || '');
   const account = getAccounts().find((item) => item.username === username && item.active !== false);
@@ -113,7 +125,7 @@ function handleLogin(body) {
     expiresAt,
   }));
 
-  return jsonOutput({ status: 'ok', token, expiresAt, account: publicAccount(account) });
+  return outputResponse({ status: 'ok', token, expiresAt, account: publicAccount(account) }, params);
 }
 
 function requireSession(token) {
@@ -169,7 +181,7 @@ function readSheetValues(sheetName) {
   };
 }
 
-function handleApply(session, body) {
+function handleApply(session, body, params) {
   if (session.role === ROLES.viewer) {
     throw withStatus(new Error('Viewer accounts cannot edit records.'), 403);
   }
@@ -185,7 +197,7 @@ function handleApply(session, body) {
   writeRowFields(sheetName, rowNumber, updates);
   appendAudit(session, sheetName, rowNumber, updates);
 
-  return jsonOutput({ status: 'ok', sheetName, rowNumber, fields: updates });
+  return outputResponse({ status: 'ok', sheetName, rowNumber, fields: updates }, params);
 }
 
 function filterAllowedFields(recordType, fields) {
@@ -241,4 +253,17 @@ function jsonOutput(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function outputResponse(payload, params) {
+  if (params && params.callback) return jsonpOutput(params.callback, payload);
+  return jsonOutput(payload);
+}
+
+function jsonpOutput(callback, payload) {
+  const safeCallback = String(callback || '').replace(/[^\w.$]/g, '');
+  if (!safeCallback) return jsonOutput(payload);
+  return ContentService
+    .createTextOutput(`${safeCallback}(${JSON.stringify(payload)});`)
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
