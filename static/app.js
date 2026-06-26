@@ -56,7 +56,6 @@ const usersCount = document.querySelector("#users-count");
 const influencerSummary = document.querySelector("#influencer-summary");
 const influencerCount = document.querySelector("#influencer-count");
 const influencersBody = document.querySelector("#influencers-body");
-const influencerInlineDetail = document.querySelector("#influencer-inline-detail");
 const detailPanel = document.querySelector("#detail-panel");
 const detailName = document.querySelector("#detail-name");
 const detailContent = document.querySelector("#detail-content");
@@ -330,15 +329,16 @@ function buildInfluencerUpdatePayload(user) {
 }
 
 async function saveInfluencerRecord(user) {
+  const feedbackTarget = document.querySelector("#influencer-feedback") || detailContent;
   try {
     const result = await applyFields(buildInfluencerUpdatePayload(user), sessionToken());
-    influencerInlineDetail.insertAdjacentHTML(
+    feedbackTarget.insertAdjacentHTML(
       "beforeend",
       `<p class="state-message">Saved ${Object.keys(result.fields || {}).length} fields.</p>`,
     );
     await loadUsers();
   } catch (error) {
-    influencerInlineDetail.insertAdjacentHTML(
+    feedbackTarget.insertAdjacentHTML(
       "beforeend",
       `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to save influencer.")}</p>`,
     );
@@ -398,13 +398,11 @@ function renderInfluencers() {
         <td>${renderChips(user.channels, PALETTES.channel)}</td>
         <td>${escapeHtml(user.audience || "TBD")}</td>
         <td>${chip(user.status || "", PALETTES.status[user.status])}</td>
-        <td>${chip(productLabel(user), productLabel(user) === "TBD" ? "#f2f2f2" : "#f4b183")}</td>
-        <td><span class="next-action">${escapeHtml(nextAction(user))}</span></td>
       </tr>`,
     )
     .join("");
   if (!rows.length) {
-    influencersBody.innerHTML = `<tr><td colspan="7"><p class="detail-empty">No influencers match these filters.</p></td></tr>`;
+    influencersBody.innerHTML = `<tr><td colspan="5"><p class="detail-empty">No influencers match these filters.</p></td></tr>`;
   }
 }
 
@@ -432,6 +430,8 @@ function renderLinkList(links) {
 }
 
 function renderInfluencerInlineDetail(user) {
+  state.selected = user;
+  detailName.textContent = user.name || "(No name)";
   const basicFields = fieldGrid([
     field("No.", user.no),
     field("Date", user.date),
@@ -464,8 +464,8 @@ function renderInfluencerInlineDetail(user) {
     "No notes recorded.",
   );
   const editSection = canEditRecords()
-    ? `<section class="creator-note influencer-edit-section">
-        <span>Edit Collaboration</span>
+    ? `<section class="detail-section influencer-edit-section">
+        <h3>Edit Collaboration</h3>
         <div class="edit-form single-column">
           <label>
             <span>Level</span>
@@ -497,13 +497,21 @@ function renderInfluencerInlineDetail(user) {
           </label>
         </div>
         <button class="button primary" id="save-influencer-button" type="button">Save Influencer</button>
+        <div id="influencer-feedback"></div>
       </section>`
-    : `<section class="creator-note readonly-note">
-        <span>Read-only access</span>
+    : `<section class="detail-section readonly-note">
+        <h3>Read-only access</h3>
         <p>Your account can view this creator, but cannot edit or write updates.</p>
       </section>`;
-  influencerInlineDetail.innerHTML = `
-    <p class="eyebrow">Selected Creator</p>
+  detailContent.innerHTML = `
+    <section class="detail-section detail-overview">
+      <div class="detail-overview-top">
+        <div>
+          <p class="eyebrow">Selected Creator</p>
+          <h3>${escapeHtml([user.channel, user.country].filter(Boolean).join(" · ") || "Creator lead")}</h3>
+        </div>
+        ${chip(user.status || "No Status", PALETTES.status[user.status])}
+      </div>
     <div class="creator-detail-head">
       <div class="creator-avatar">${escapeHtml(user.level || "TBD")}</div>
       <div>
@@ -516,6 +524,7 @@ function renderInfluencerInlineDetail(user) {
       ${chip(user.status || "No Status", PALETTES.status[user.status])}
       ${chip(productLabel(user), productLabel(user) === "TBD" ? "#f2f2f2" : "#f4b183")}
     </div>
+    </section>
     <div class="creator-stats">
       <div><span>Audience</span><strong>${escapeHtml(user.audience || "TBD")}</strong></div>
       <div><span>Email</span><strong>${escapeHtml(user.email ? "Yes" : "No")}</strong></div>
@@ -552,6 +561,8 @@ function renderInfluencerInlineDetail(user) {
     </details>
     ${editSection}
   `;
+  detailPanel.classList.add("open");
+  detailPanel.setAttribute("aria-hidden", "false");
   document.querySelector("#save-influencer-button")?.addEventListener("click", () => saveInfluencerRecord(user));
 }
 
