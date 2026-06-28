@@ -21,7 +21,6 @@ const ROLES = {
 const EDITABLE_FIELDS = {
   koc: [
     'Update Input - Write Here',
-    'Raw Update Notes',
     'User Level (S/A/B/C/TBD)',
     'ABC Program Potential',
     'Beta Tester Potential',
@@ -37,7 +36,6 @@ const EDITABLE_FIELDS = {
   ],
   influencer: [
     'Update Input - Write Here',
-    'Raw Update Notes',
     'Level',
     'Status',
     'Product',

@@ -488,7 +488,7 @@ function renderInfluencerInlineDetail(user) {
         : field("Next Follow-up Date", user.nextFollowUpDate),
       canEdit
         ? editableFieldHtml("Update Input - Write Here", `<textarea id="edit-influencer-update-input">${escapeHtml(user.updateInput)}</textarea>`)
-        : field("Raw Update Notes", user.updateInput),
+        : field("Update Input - Write Here", user.updateInput),
       field("Extra Notes 1", user.extraNotes),
       field("Extended Background", user.extendedBackground),
     ],
@@ -599,7 +599,7 @@ function renderDetail(user) {
       field("Extended Background", user.extendedBackground),
       canEdit
         ? editableFieldHtml("Update Input - Write Here", `<textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>`)
-        : field("Raw Update Notes", user.updateInput),
+        : field("Update Input - Write Here", user.updateInput),
     ],
     "No notes recorded.",
   );
@@ -730,7 +730,6 @@ async function analyzeSelected() {
     updateInput,
     raw: {
       ...state.selected.raw,
-      "Raw Update Notes": updateInput,
       "Update Input - Write Here": updateInput,
     },
   });

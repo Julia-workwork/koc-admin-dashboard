@@ -341,7 +341,7 @@ async function handleAnalyze(req, res) {
   const row = normalizeKocRow(
     {
       ...body.row?.raw,
-      "Raw Update Notes": body.updateInput ?? body.row?.updateInput ?? "",
+      "Update Input - Write Here": body.updateInput ?? body.row?.updateInput ?? "",
     },
     body.row?.rowNumber,
   );

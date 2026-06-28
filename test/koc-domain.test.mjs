@@ -11,7 +11,8 @@ import {
 
 test("required columns include existing 2026 KOC sheet headers", () => {
   assert.equal(REQUIRED_COLUMNS.includes("Name"), true);
-  assert.equal(REQUIRED_COLUMNS.includes("Raw Update Notes"), true);
+  assert.equal(REQUIRED_COLUMNS.includes("Update Input - Write Here"), true);
+  assert.equal(REQUIRED_COLUMNS.includes("Raw Update Notes"), false);
 });
 
 test("normalizes one Google Sheet row into admin-friendly fields", () => {
@@ -30,7 +31,7 @@ test("normalizes one Google Sheet row into admin-friendly fields", () => {
       "Self-Owned Product": "HA2",
       "Country/Region": "Canada",
       Email: "andre@example.com",
-      "Raw Update Notes": "Replied slowly but gave useful field details.",
+      "Update Input - Write Here": "Replied slowly but gave useful field details.",
     },
     4,
   );
@@ -86,7 +87,7 @@ test("extracts influencer audience and links from resources", () => {
 
 test("builds Today buckets for pending updates and follow-up dates", () => {
   const rows = [
-    normalizeKocRow({ Name: "A", "Raw Update Notes": "new note" }, 3),
+    normalizeKocRow({ Name: "A", "Update Input - Write Here": "new note" }, 3),
     normalizeKocRow({ Name: "B", "Next Follow-up Date": "2026-05-12" }, 4),
     normalizeKocRow({ Name: "C", "User Level (S/A/B/C/TBD)": "S", "Last Contact Date": "2026-03-01" }, 5),
   ];

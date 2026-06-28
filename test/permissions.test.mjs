@@ -54,6 +54,8 @@ test("Influencer updates keep only approved editable fields", () => {
 
 test("Editable field lists include the planned operational fields", () => {
   assert.ok(EDITABLE_FIELDS.koc.includes("Update Input - Write Here"));
+  assert.equal(EDITABLE_FIELDS.koc.includes("Raw Update Notes"), false);
   assert.ok(EDITABLE_FIELDS.koc.includes("User Type"));
+  assert.equal(EDITABLE_FIELDS.influencer.includes("Raw Update Notes"), false);
   assert.ok(EDITABLE_FIELDS.influencer.includes("Next Action"));
 });
