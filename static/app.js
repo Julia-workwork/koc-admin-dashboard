@@ -1,7 +1,6 @@
 import {
   OPTIONS,
   PALETTES,
-  analyzeUpdateNote,
   buildTodayBuckets,
   canRoleEditRecords,
   canRoleManageRules,
@@ -629,8 +628,6 @@ function renderDetail(user) {
     ? `<section class="detail-section detail-save-bar">
       <div class="actions">
         <button class="button primary" id="save-record-button">Save Record</button>
-        <button class="button primary" id="analyze-button">Analyze Update</button>
-        <button class="button" id="apply-button" disabled>Apply Preview</button>
       </div>
       <div id="suggestion-output"></div>
     </section>`
@@ -682,8 +679,6 @@ function renderDetail(user) {
   detailPanel.classList.add("open");
   detailPanel.setAttribute("aria-hidden", "false");
   if (canEdit) {
-    document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
-    document.querySelector("#apply-button").addEventListener("click", applySelected);
     document.querySelector("#save-record-button").addEventListener("click", saveSelectedRecord);
   }
 }
@@ -727,54 +722,6 @@ async function saveSelectedRecord() {
     suggestionOutput().insertAdjacentHTML(
       "beforeend",
       `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to save record.")}</p>`,
-    );
-  }
-}
-
-async function analyzeSelected() {
-  const updateInput = document.querySelector("#update-input").value;
-  const suggestion = analyzeUpdateNote({
-    ...state.selected,
-    updateInput,
-    raw: {
-      ...state.selected.raw,
-      "Update Input - Write Here": updateInput,
-    },
-  });
-  state.currentSuggestion = suggestion;
-  const rows = Object.entries(suggestion.fields)
-    .map(([key, value]) => `<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(value)}</td></tr>`)
-    .join("");
-  suggestionOutput().innerHTML = `
-    <table class="suggestion-table">
-      <thead><tr><th>Field</th><th>Suggested Value</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <p class="meta">${escapeHtml(suggestion.summary)}</p>
-  `;
-  document.querySelector("#apply-button").disabled = false;
-}
-
-async function applySelected() {
-  try {
-    const result = await applyFields(
-      {
-        recordType: "koc",
-        sheetName: selectedKocSheetName(state.selected),
-        rowNumber: state.selected.rowNumber,
-        fields: state.currentSuggestion?.fields || {},
-      },
-      sessionToken(),
-    );
-    suggestionOutput().insertAdjacentHTML(
-      "beforeend",
-      `<p class="state-message">Applied ${Object.keys(result.fields || {}).length} approved fields.</p>`,
-    );
-    await loadUsers();
-  } catch (error) {
-    suggestionOutput().insertAdjacentHTML(
-      "beforeend",
-      `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to apply preview.")}</p>`,
     );
   }
 }

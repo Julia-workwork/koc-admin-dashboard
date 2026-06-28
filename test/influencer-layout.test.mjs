@@ -65,6 +65,14 @@ test("KOC user editable controls live inside the original detail sections", () =
   assert.match(app, /detail-save-bar/);
 });
 
+test("KOC user detail keeps only the save action after raw input removal", () => {
+  assert.match(app, /id="save-record-button"[\s\S]*Save Record/);
+  assert.doesNotMatch(app, /Analyze Update/);
+  assert.doesNotMatch(app, /Apply Preview/);
+  assert.doesNotMatch(app, /id="analyze-button"/);
+  assert.doesNotMatch(app, /id="apply-button"/);
+});
+
 test("Influencer editable controls live inside the original detail sections", () => {
   assert.doesNotMatch(app, /Edit Collaboration/);
   assert.doesNotMatch(app, /influencer-edit-section/);
