@@ -524,6 +524,7 @@ function renderInfluencerInlineDetail(user) {
       <div>
         <div class="creator-keyline">
           ${renderChips(user.channels, PALETTES.channel)}
+          ${renderChips(user.types, PALETTES.type)}
           ${chip(user.status || "No Status", PALETTES.status[user.status])}
         </div>
         <p class="creator-subline">${escapeHtml([user.audience, productLabel(user), user.email ? "Email on file" : "No email", user.country].filter(Boolean).join(" · "))}</p>

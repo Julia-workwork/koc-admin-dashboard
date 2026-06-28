@@ -30,8 +30,14 @@ test("User list table is integrated into the page instead of a small inner scrol
 });
 
 test("Influencer detail uses a compact decision panel", () => {
+  const keylineStart = app.indexOf('<div class="creator-keyline">');
+  const keylineEnd = app.indexOf("</div>", keylineStart);
+  const creatorKeyline = app.slice(keylineStart, keylineEnd);
+
   assert.match(app, /creator-compact-hero/);
   assert.match(app, /creator-keyline/);
+  assert.match(creatorKeyline, /renderChips\(user\.channels, PALETTES\.channel\)/);
+  assert.match(creatorKeyline, /renderChips\(user\.types, PALETTES\.type\)/);
   assert.match(app, /creator-action-row/);
   assert.match(app, /creator-ops-grid/);
   assert.match(app, /More Creator Details/);
