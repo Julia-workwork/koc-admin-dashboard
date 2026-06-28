@@ -559,22 +559,34 @@ function renderInfluencerInlineDetail(user) {
   document.querySelector("#save-influencer-button")?.addEventListener("click", () => saveInfluencerRecord(user));
 }
 
+function editableFieldHtml(label, controlHtml) {
+  return `<div class="field editable-field"><span>${label}</span>${controlHtml}</div>`;
+}
+
 function renderDetail(user) {
   state.selected = user;
   detailName.textContent = user.name || "(No name)";
-  const evaluationFields = fieldGrid(
-    [
-      fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
-      fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
-      fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
-      fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
-      fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
-      fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
-      fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
-      fieldHtml("Follow-up Priority", chip(user.followUpPriority, PALETTES.priority[user.followUpPriority])),
-    ],
-    "No evaluation fields recorded.",
-  );
+  const canEdit = canEditRecords();
+  const evaluationFields = fieldGrid([
+    canEdit
+      ? editableFieldHtml("User Level", `<select id="edit-user-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>`)
+      : fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
+    canEdit
+      ? editableFieldHtml("User Status", `<select id="edit-user-status">${editOptionList(OPTIONS.status, user.status)}</select>`)
+      : fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
+    canEdit
+      ? editableFieldHtml("User Type", `<input id="edit-user-type" value="${escapeHtml(user.types.join(", "))}" />`)
+      : fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
+    fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
+    fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
+    canEdit
+      ? editableFieldHtml("Content Feedback Quality", `<select id="edit-content-quality">${editOptionList(OPTIONS.quality, user.contentQuality)}</select>`)
+      : fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
+    canEdit
+      ? editableFieldHtml("Cooperation Level", `<select id="edit-cooperation">${editOptionList(OPTIONS.quality, user.cooperation)}</select>`)
+      : fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
+    fieldHtml("Follow-up Priority", chip(user.followUpPriority, PALETTES.priority[user.followUpPriority])),
+  ]);
   const profileFields = fieldGrid([
     field("Email", user.email),
     field("Country/Region", user.country),
@@ -587,62 +599,33 @@ function renderDetail(user) {
     [
       field("Description", user.description),
       field("Resources", user.resources),
-      field("Notes", user.notes),
+      canEdit
+        ? editableFieldHtml("Notes", `<textarea id="edit-notes">${escapeHtml(user.notes)}</textarea>`)
+        : field("Notes", user.notes),
       field("Extra Notes", user.extraNotes),
       field("Extended Background", user.extendedBackground),
-      field("Raw Update Notes", user.updateInput),
+      canEdit
+        ? editableFieldHtml("Update Input - Write Here", `<textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>`)
+        : field("Raw Update Notes", user.updateInput),
     ],
     "No notes recorded.",
   );
   const followUpFields = fieldGrid(
     [
       field("Last Contact Date", user.lastContactDate),
-      field("Next Follow-up Date", user.nextFollowUpDate),
-      field("Follow-up Reason", user.followUpReason),
+      canEdit
+        ? editableFieldHtml("Next Follow-up Date", `<input id="edit-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />`)
+        : field("Next Follow-up Date", user.nextFollowUpDate),
+      canEdit
+        ? editableFieldHtml("Follow-up Reason", `<input id="edit-follow-up-reason" value="${escapeHtml(user.followUpReason)}" />`)
+        : field("Follow-up Reason", user.followUpReason),
       field("AI Suggestion Status", user.aiSuggestionStatus),
       field("Last Parsed At", user.lastParsedAt),
     ],
     "No follow-up fields recorded.",
   );
-  const editSection = canEditRecords()
-    ? `<section class="detail-section">
-      <h3>Editable Operations</h3>
-      <div class="edit-form">
-        <label>
-          <span>User Level</span>
-          <select id="edit-user-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>
-        </label>
-        <label>
-          <span>User Status</span>
-          <select id="edit-user-status">${editOptionList(OPTIONS.status, user.status)}</select>
-        </label>
-        <label>
-          <span>User Type</span>
-          <input id="edit-user-type" value="${escapeHtml(user.types.join(", "))}" />
-        </label>
-        <label>
-          <span>Content Feedback Quality</span>
-          <select id="edit-content-quality">${editOptionList(OPTIONS.quality, user.contentQuality)}</select>
-        </label>
-        <label>
-          <span>Cooperation Level</span>
-          <select id="edit-cooperation">${editOptionList(OPTIONS.quality, user.cooperation)}</select>
-        </label>
-        <label>
-          <span>Next Follow-up Date</span>
-          <input id="edit-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />
-        </label>
-        <label class="wide">
-          <span>Follow-up Reason</span>
-          <input id="edit-follow-up-reason" value="${escapeHtml(user.followUpReason)}" />
-        </label>
-        <label class="wide">
-          <span>Notes</span>
-          <textarea id="edit-notes">${escapeHtml(user.notes)}</textarea>
-        </label>
-      </div>
-      <h3>Update Input - Write Here</h3>
-      <textarea id="update-input" class="update-input">${escapeHtml(user.updateInput)}</textarea>
+  const actionSection = canEdit
+    ? `<section class="detail-section detail-save-bar">
       <div class="actions">
         <button class="button primary" id="save-record-button">Save Record</button>
         <button class="button primary" id="analyze-button">Analyze Update</button>
@@ -693,11 +676,11 @@ function renderDetail(user) {
         ${followUpFields}
       </div>
     </section>
-    ${editSection}
+    ${actionSection}
   `;
   detailPanel.classList.add("open");
   detailPanel.setAttribute("aria-hidden", "false");
-  if (canEditRecords()) {
+  if (canEdit) {
     document.querySelector("#analyze-button").addEventListener("click", analyzeSelected);
     document.querySelector("#apply-button").addEventListener("click", applySelected);
     document.querySelector("#save-record-button").addEventListener("click", saveSelectedRecord);

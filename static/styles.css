@@ -1010,6 +1010,38 @@ td:first-child .link-button {
   text-transform: uppercase;
 }
 
+.editable-field {
+  background: #ffffff;
+}
+
+.editable-field input,
+.editable-field select,
+.editable-field textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px 10px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.editable-field textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.detail-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  border: 1px solid var(--line);
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(14px);
+}
+
 .field strong,
 .field p,
 .field-value {

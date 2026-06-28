@@ -37,3 +37,11 @@ test("Influencer detail uses a compact decision panel", () => {
   assert.doesNotMatch(app, /creator-avatar/);
   assert.doesNotMatch(css, /\.creator-avatar/);
 });
+
+test("KOC user editable controls live inside the original detail sections", () => {
+  assert.doesNotMatch(app, /Editable Operations/);
+  assert.match(app, /<h3>Evaluation<\/h3>[\s\S]*edit-user-level/);
+  assert.match(app, /<h3>Notes<\/h3>[\s\S]*edit-notes/);
+  assert.match(app, /<h3>Follow-up<\/h3>[\s\S]*edit-next-follow-up/);
+  assert.match(app, /detail-save-bar/);
+});
