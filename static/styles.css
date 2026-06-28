@@ -621,6 +621,18 @@ main {
   gap: 12px;
 }
 
+.creator-ops-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.creator-ops-grid h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+}
+
 .creator-note {
   border: 1px solid #edf1f6;
   border-radius: 16px;
@@ -909,6 +921,26 @@ td:first-child .link-button {
   font-weight: 950;
   line-height: 0.98;
   overflow-wrap: anywhere;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.detail-level-badge {
+  display: inline-grid;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgb(22 31 45 / 12%);
 }
 
 .icon-button {

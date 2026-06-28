@@ -57,6 +57,8 @@ const influencerSummary = document.querySelector("#influencer-summary");
 const influencerCount = document.querySelector("#influencer-count");
 const influencersBody = document.querySelector("#influencers-body");
 const detailPanel = document.querySelector("#detail-panel");
+const detailEyebrow = document.querySelector("#detail-eyebrow");
+const detailLevelBadge = document.querySelector("#detail-level-badge");
 const detailName = document.querySelector("#detail-name");
 const detailContent = document.querySelector("#detail-content");
 
@@ -137,6 +139,16 @@ function chip(label, color) {
   if (!label) return "";
   const background = color || "#eef3f8";
   return `<span class="chip" style="background:${background};color:${textColorForBackground(background)}">${escapeHtml(label)}</span>`;
+}
+
+function setDetailHeader(user, label = "User Detail") {
+  const level = user.level || "TBD";
+  const background = PALETTES.level[level] || PALETTES.level.TBD;
+  detailEyebrow.textContent = label;
+  detailName.textContent = user.name || "(No name)";
+  detailLevelBadge.textContent = level;
+  detailLevelBadge.style.background = background;
+  detailLevelBadge.style.color = textColorForBackground(background);
 }
 
 function escapeHtml(value) {
@@ -438,45 +450,26 @@ function renderLinkActions(links) {
 
 function renderInfluencerInlineDetail(user) {
   state.selected = user;
-  detailName.textContent = user.name || "(No name)";
+  setDetailHeader(user, "Influencer Detail");
   const canEdit = canEditRecords();
-  const basicFields = fieldGrid([
-    field("No.", user.no),
-    field("Date", user.date),
-    field("Profile", user.profile),
-    field("Channel", user.channel),
-  ]);
-  const evaluationFields = fieldGrid([
+  const visibleOpsFields = fieldGrid([
     canEdit
       ? editableFieldHtml("User Level", `<select id="edit-influencer-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>`)
       : fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
     canEdit
       ? editableFieldHtml("User Status", `<select id="edit-influencer-status">${editOptionList(OPTIONS.status, user.status)}</select>`)
       : fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
-    fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
-    fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
-    fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
-    fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
-    fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
-  ]);
-  const productFields = fieldGrid([
     canEdit
       ? editableFieldHtml(
           "Product",
           `<input id="edit-influencer-product" value="${escapeHtml(productLabel(user) === "TBD" ? "" : productLabel(user))}" />`,
         )
       : field("Product", productLabel(user)),
-    field("Self-Owned Product", user.ownedProduct),
-    field("Exchange Product", user.exchangeProduct),
+    field("Audience", user.audience),
+    field("Email", user.email || "No email"),
   ]);
-  const contactFields = fieldGrid([field("Country/Region", user.country), field("Email", user.email), field("Address", user.address)]);
-  const notesFields = fieldGrid(
+  const visibleNotesFields = fieldGrid(
     [
-      field("Description", user.description),
-      field("Resources", user.resources),
-      canEdit
-        ? editableFieldHtml("Latest Note / Notes", `<textarea id="edit-influencer-notes">${escapeHtml(user.notes)}</textarea>`)
-        : field("Notes", user.notes),
       canEdit
         ? editableFieldHtml("Next Action", `<input id="edit-influencer-next-action" value="${escapeHtml(nextAction(user))}" />`)
         : field("Next Action", nextAction(user)),
@@ -487,12 +480,35 @@ function renderInfluencerInlineDetail(user) {
           )
         : field("Next Follow-up Date", user.nextFollowUpDate),
       canEdit
+        ? editableFieldHtml("Latest Note / Notes", `<textarea id="edit-influencer-notes">${escapeHtml(user.notes)}</textarea>`)
+        : field("Notes", user.notes),
+      canEdit
         ? editableFieldHtml("Update Input - Write Here", `<textarea id="edit-influencer-update-input">${escapeHtml(user.updateInput)}</textarea>`)
         : field("Update Input - Write Here", user.updateInput),
+    ],
+    "No action fields recorded.",
+  );
+  const moreDetailFields = fieldGrid(
+    [
+      field("No.", user.no),
+      field("Date", user.date),
+      field("Profile", user.profile),
+      field("Channel", user.channel),
+      fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
+      fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
+      fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
+      fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
+      fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
+      field("Self-Owned Product", user.ownedProduct),
+      field("Exchange Product", user.exchangeProduct),
+      field("Country/Region", user.country),
+      field("Address", user.address),
+      field("Description", user.description),
+      field("Resources", user.resources),
       field("Extra Notes 1", user.extraNotes),
       field("Extended Background", user.extendedBackground),
     ],
-    "No notes recorded.",
+    "No extra details recorded.",
   );
   const actionSection = canEdit
     ? `<section class="detail-section detail-save-bar">
@@ -507,7 +523,6 @@ function renderInfluencerInlineDetail(user) {
     <section class="detail-section creator-compact-hero">
       <div>
         <div class="creator-keyline">
-          ${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}
           ${renderChips(user.channels, PALETTES.channel)}
           ${chip(user.status || "No Status", PALETTES.status[user.status])}
         </div>
@@ -525,25 +540,17 @@ function renderInfluencerInlineDetail(user) {
         <p>${escapeHtml(nextAction(user))}</p>
       </div>
     </section>
+    <section class="detail-section creator-ops-grid">
+      <h3>Collaboration Setup</h3>
+      <div class="field-grid compact-field-grid">${visibleOpsFields}</div>
+    </section>
+    <section class="detail-section creator-ops-grid">
+      <h3>Action & Notes</h3>
+      <div class="field-stack">${visibleNotesFields}</div>
+    </section>
     <details class="creator-detail-group">
-      <summary>Basic Information</summary>
-      <div class="field-grid compact-field-grid">${basicFields}</div>
-    </details>
-    <details class="creator-detail-group">
-      <summary>Evaluation & Segmentation</summary>
-      <div class="field-grid compact-field-grid">${evaluationFields}</div>
-    </details>
-    <details class="creator-detail-group">
-      <summary>Product Relationship</summary>
-      <div class="field-grid compact-field-grid">${productFields}</div>
-    </details>
-    <details class="creator-detail-group">
-      <summary>Contact & Location</summary>
-      <div class="field-grid compact-field-grid">${contactFields}</div>
-    </details>
-    <details class="creator-detail-group">
-      <summary>Original Notes & Update Input</summary>
-      <div class="field-stack">${notesFields}</div>
+      <summary>More Creator Details</summary>
+      <div class="field-grid compact-field-grid">${moreDetailFields}</div>
     </details>
     ${actionSection}
   `;
@@ -558,7 +565,7 @@ function editableFieldHtml(label, controlHtml) {
 
 function renderDetail(user) {
   state.selected = user;
-  detailName.textContent = user.name || "(No name)";
+  setDetailHeader(user, "User Detail");
   const canEdit = canEditRecords();
   const evaluationFields = fieldGrid([
     canEdit

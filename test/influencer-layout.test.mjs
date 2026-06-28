@@ -33,9 +33,22 @@ test("Influencer detail uses a compact decision panel", () => {
   assert.match(app, /creator-compact-hero/);
   assert.match(app, /creator-keyline/);
   assert.match(app, /creator-action-row/);
+  assert.match(app, /creator-ops-grid/);
+  assert.match(app, /More Creator Details/);
   assert.doesNotMatch(app, /Selected Creator/);
   assert.doesNotMatch(app, /creator-avatar/);
   assert.doesNotMatch(css, /\.creator-avatar/);
+  assert.doesNotMatch(app, /Basic Information/);
+  assert.doesNotMatch(app, /Raw Sheet Fields/);
+});
+
+test("Detail drawer shows the record level beside the selected name", () => {
+  assert.match(html, /id="detail-level-badge"/);
+  assert.match(css, /\.detail-title-row/);
+  assert.match(css, /\.detail-level-badge/);
+  assert.match(app, /function setDetailHeader/);
+  assert.match(app, /setDetailHeader\(user, "Influencer Detail"\)/);
+  assert.match(app, /setDetailHeader\(user, "User Detail"\)/);
 });
 
 test("KOC user editable controls live inside the original detail sections", () => {
@@ -49,13 +62,10 @@ test("KOC user editable controls live inside the original detail sections", () =
 test("Influencer editable controls live inside the original detail sections", () => {
   assert.doesNotMatch(app, /Edit Collaboration/);
   assert.doesNotMatch(app, /influencer-edit-section/);
-  assert.match(app, /const evaluationFields = fieldGrid\([\s\S]*edit-influencer-level/);
-  assert.match(app, /const evaluationFields = fieldGrid\([\s\S]*edit-influencer-status/);
-  assert.match(app, /const productFields = fieldGrid\([\s\S]*edit-influencer-product/);
-  assert.match(app, /const notesFields = fieldGrid\([\s\S]*edit-influencer-notes/);
-  assert.match(app, /const notesFields = fieldGrid\([\s\S]*edit-influencer-update-input/);
-  assert.match(app, /<summary>Evaluation & Segmentation<\/summary>[\s\S]*\$\{evaluationFields\}/);
-  assert.match(app, /<summary>Product Relationship<\/summary>[\s\S]*\$\{productFields\}/);
-  assert.match(app, /<summary>Original Notes & Update Input<\/summary>[\s\S]*\$\{notesFields\}/);
+  assert.match(app, /const visibleOpsFields = fieldGrid\([\s\S]*edit-influencer-level/);
+  assert.match(app, /const visibleOpsFields = fieldGrid\([\s\S]*edit-influencer-status/);
+  assert.match(app, /const visibleOpsFields = fieldGrid\([\s\S]*edit-influencer-product/);
+  assert.match(app, /const visibleNotesFields = fieldGrid\([\s\S]*edit-influencer-notes/);
+  assert.match(app, /const visibleNotesFields = fieldGrid\([\s\S]*edit-influencer-update-input/);
   assert.match(app, /id="save-influencer-button"[\s\S]*Save Influencer/);
 });
