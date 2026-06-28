@@ -429,6 +429,13 @@ function renderLinkList(links) {
     .join("")}</div>`;
 }
 
+function renderLinkActions(links) {
+  if (!links?.length) return "";
+  return `<div class="creator-action-row">${links
+    .map((link, index) => `<a href="${escapeHtml(link)}" target="_blank" rel="noreferrer">Open Link ${index + 1}</a>`)
+    .join("")}</div>`;
+}
+
 function renderInfluencerInlineDetail(user) {
   state.selected = user;
   detailName.textContent = user.name || "(No name)";
@@ -504,46 +511,32 @@ function renderInfluencerInlineDetail(user) {
         <p>Your account can view this creator, but cannot edit or write updates.</p>
       </section>`;
   detailContent.innerHTML = `
-    <section class="detail-section detail-overview">
-      <div class="detail-overview-top">
-        <div>
-          <p class="eyebrow">Selected Creator</p>
-          <h3>${escapeHtml([user.channel, user.country].filter(Boolean).join(" · ") || "Creator lead")}</h3>
-        </div>
-        ${chip(user.status || "No Status", PALETTES.status[user.status])}
-      </div>
-    <div class="creator-detail-head">
-      <div class="creator-avatar">${escapeHtml(user.level || "TBD")}</div>
+    <section class="detail-section creator-compact-hero">
       <div>
-        <h3>${escapeHtml(user.name || "(No name)")}</h3>
-        <p class="meta">${escapeHtml([user.channel, user.country].filter(Boolean).join(" · ") || "Creator lead")}</p>
+        <div class="creator-keyline">
+          ${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}
+          ${renderChips(user.channels, PALETTES.channel)}
+          ${chip(user.status || "No Status", PALETTES.status[user.status])}
+        </div>
+        <p class="creator-subline">${escapeHtml([user.audience, productLabel(user), user.email ? "Email on file" : "No email", user.country].filter(Boolean).join(" · "))}</p>
       </div>
-    </div>
-    <div class="detail-chip-row">
-      ${renderChips(user.channels, PALETTES.channel)}
-      ${chip(user.status || "No Status", PALETTES.status[user.status])}
-      ${chip(productLabel(user), productLabel(user) === "TBD" ? "#f2f2f2" : "#f4b183")}
-    </div>
+      ${renderLinkActions(user.links)}
     </section>
-    <div class="creator-stats">
-      <div><span>Audience</span><strong>${escapeHtml(user.audience || "TBD")}</strong></div>
-      <div><span>Email</span><strong>${escapeHtml(user.email ? "Yes" : "No")}</strong></div>
-      <div><span>Level</span><strong>${escapeHtml(user.level || "TBD")}</strong></div>
-    </div>
-    <section class="creator-note">
-      <span>Latest Note</span>
-      <p>${escapeHtml(user.notes || user.description || "No notes recorded yet.")}</p>
+    <section class="detail-section creator-decision-grid">
+      <div class="creator-note">
+        <span>Latest Note</span>
+        <p>${escapeHtml(user.notes || user.description || "No notes recorded yet.")}</p>
+      </div>
+      <div class="creator-note">
+        <span>Next Action</span>
+        <p>${escapeHtml(nextAction(user))}</p>
+      </div>
     </section>
-    <section class="creator-note">
-      <span>Next Action</span>
-      <p>${escapeHtml(nextAction(user))}</p>
-    </section>
-    ${fieldHtml("Links", renderLinkList(user.links))}
-    <details class="creator-detail-group" open>
+    <details class="creator-detail-group">
       <summary>Basic Information</summary>
       <div class="field-grid compact-field-grid">${basicFields}</div>
     </details>
-    <details class="creator-detail-group" open>
+    <details class="creator-detail-group">
       <summary>Evaluation & Segmentation</summary>
       <div class="field-grid compact-field-grid">${evaluationFields}</div>
     </details>
@@ -555,7 +548,7 @@ function renderInfluencerInlineDetail(user) {
       <summary>Contact & Location</summary>
       <div class="field-grid compact-field-grid">${contactFields}</div>
     </details>
-    <details class="creator-detail-group" open>
+    <details class="creator-detail-group">
       <summary>Original Notes & Update Input</summary>
       <div class="field-stack">${notesFields}</div>
     </details>

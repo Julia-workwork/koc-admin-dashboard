@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const html = fs.readFileSync(new URL("../static/index.html", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../static/app.js", import.meta.url), "utf8");
+const css = fs.readFileSync(new URL("../static/styles.css", import.meta.url), "utf8");
 
 test("Influencer list uses the compact five-column table", () => {
   const influencerSection = html.match(/<section id="influencers-view"[\s\S]*?<\/section>\s*<section id="rules-view"/)?.[0] || "";
@@ -22,10 +23,17 @@ test("Influencer details open in the shared detail drawer instead of a permanent
 });
 
 test("User list table is integrated into the page instead of a small inner scroll panel", () => {
-  const css = fs.readFileSync(new URL("../static/styles.css", import.meta.url), "utf8");
-
   assert.match(html, /class="table-shell user-table-shell"/);
   assert.match(html, /<table class="user-table">/);
   assert.match(css, /\.table-shell\.user-table-shell\s*{[\s\S]*max-height:\s*none;/);
   assert.match(css, /\.table-shell\.user-table-shell\s*{[\s\S]*overflow:\s*visible;/);
+});
+
+test("Influencer detail uses a compact decision panel", () => {
+  assert.match(app, /creator-compact-hero/);
+  assert.match(app, /creator-keyline/);
+  assert.match(app, /creator-action-row/);
+  assert.doesNotMatch(app, /Selected Creator/);
+  assert.doesNotMatch(app, /creator-avatar/);
+  assert.doesNotMatch(css, /\.creator-avatar/);
 });
