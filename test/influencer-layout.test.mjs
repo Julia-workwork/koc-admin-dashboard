@@ -45,3 +45,17 @@ test("KOC user editable controls live inside the original detail sections", () =
   assert.match(app, /<h3>Follow-up<\/h3>[\s\S]*edit-next-follow-up/);
   assert.match(app, /detail-save-bar/);
 });
+
+test("Influencer editable controls live inside the original detail sections", () => {
+  assert.doesNotMatch(app, /Edit Collaboration/);
+  assert.doesNotMatch(app, /influencer-edit-section/);
+  assert.match(app, /const evaluationFields = fieldGrid\([\s\S]*edit-influencer-level/);
+  assert.match(app, /const evaluationFields = fieldGrid\([\s\S]*edit-influencer-status/);
+  assert.match(app, /const productFields = fieldGrid\([\s\S]*edit-influencer-product/);
+  assert.match(app, /const notesFields = fieldGrid\([\s\S]*edit-influencer-notes/);
+  assert.match(app, /const notesFields = fieldGrid\([\s\S]*edit-influencer-update-input/);
+  assert.match(app, /<summary>Evaluation & Segmentation<\/summary>[\s\S]*\$\{evaluationFields\}/);
+  assert.match(app, /<summary>Product Relationship<\/summary>[\s\S]*\$\{productFields\}/);
+  assert.match(app, /<summary>Original Notes & Update Input<\/summary>[\s\S]*\$\{notesFields\}/);
+  assert.match(app, /id="save-influencer-button"[\s\S]*Save Influencer/);
+});

@@ -332,10 +332,6 @@ main {
   resize: vertical;
 }
 
-.influencer-edit-section .button {
-  margin-top: 12px;
-}
-
 .state-message.is-hidden {
   display: none;
 }

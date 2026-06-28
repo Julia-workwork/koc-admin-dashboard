@@ -439,6 +439,7 @@ function renderLinkActions(links) {
 function renderInfluencerInlineDetail(user) {
   state.selected = user;
   detailName.textContent = user.name || "(No name)";
+  const canEdit = canEditRecords();
   const basicFields = fieldGrid([
     field("No.", user.no),
     field("Date", user.date),
@@ -446,15 +447,25 @@ function renderInfluencerInlineDetail(user) {
     field("Channel", user.channel),
   ]);
   const evaluationFields = fieldGrid([
-    fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
+    canEdit
+      ? editableFieldHtml("User Level", `<select id="edit-influencer-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>`)
+      : fieldHtml("User Level", chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])),
+    canEdit
+      ? editableFieldHtml("User Status", `<select id="edit-influencer-status">${editOptionList(OPTIONS.status, user.status)}</select>`)
+      : fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
     fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
     fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
     fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
     fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
-    fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
     fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
   ]);
   const productFields = fieldGrid([
+    canEdit
+      ? editableFieldHtml(
+          "Product",
+          `<input id="edit-influencer-product" value="${escapeHtml(productLabel(user) === "TBD" ? "" : productLabel(user))}" />`,
+        )
+      : field("Product", productLabel(user)),
     field("Self-Owned Product", user.ownedProduct),
     field("Exchange Product", user.exchangeProduct),
   ]);
@@ -463,46 +474,28 @@ function renderInfluencerInlineDetail(user) {
     [
       field("Description", user.description),
       field("Resources", user.resources),
-      field("Notes", user.notes),
+      canEdit
+        ? editableFieldHtml("Latest Note / Notes", `<textarea id="edit-influencer-notes">${escapeHtml(user.notes)}</textarea>`)
+        : field("Notes", user.notes),
+      canEdit
+        ? editableFieldHtml("Next Action", `<input id="edit-influencer-next-action" value="${escapeHtml(nextAction(user))}" />`)
+        : field("Next Action", nextAction(user)),
+      canEdit
+        ? editableFieldHtml(
+            "Next Follow-up Date",
+            `<input id="edit-influencer-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />`,
+          )
+        : field("Next Follow-up Date", user.nextFollowUpDate),
+      canEdit
+        ? editableFieldHtml("Update Input - Write Here", `<textarea id="edit-influencer-update-input">${escapeHtml(user.updateInput)}</textarea>`)
+        : field("Raw Update Notes", user.updateInput),
       field("Extra Notes 1", user.extraNotes),
       field("Extended Background", user.extendedBackground),
-      field("Raw Update Notes", user.updateInput),
     ],
     "No notes recorded.",
   );
-  const editSection = canEditRecords()
-    ? `<section class="detail-section influencer-edit-section">
-        <h3>Edit Collaboration</h3>
-        <div class="edit-form single-column">
-          <label>
-            <span>Level</span>
-            <select id="edit-influencer-level">${editOptionList(OPTIONS.level, user.level || "TBD")}</select>
-          </label>
-          <label>
-            <span>Status</span>
-            <select id="edit-influencer-status">${editOptionList(OPTIONS.status, user.status)}</select>
-          </label>
-          <label>
-            <span>Product</span>
-            <input id="edit-influencer-product" value="${escapeHtml(productLabel(user) === "TBD" ? "" : productLabel(user))}" />
-          </label>
-          <label>
-            <span>Next Action</span>
-            <input id="edit-influencer-next-action" value="${escapeHtml(nextAction(user))}" />
-          </label>
-          <label>
-            <span>Latest Note / Notes</span>
-            <textarea id="edit-influencer-notes">${escapeHtml(user.notes)}</textarea>
-          </label>
-          <label>
-            <span>Next Follow-up Date</span>
-            <input id="edit-influencer-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />
-          </label>
-          <label>
-            <span>Update Input - Write Here</span>
-            <textarea id="edit-influencer-update-input">${escapeHtml(user.updateInput)}</textarea>
-          </label>
-        </div>
+  const actionSection = canEdit
+    ? `<section class="detail-section detail-save-bar">
         <button class="button primary" id="save-influencer-button" type="button">Save Influencer</button>
         <div id="influencer-feedback"></div>
       </section>`
@@ -552,7 +545,7 @@ function renderInfluencerInlineDetail(user) {
       <summary>Original Notes & Update Input</summary>
       <div class="field-stack">${notesFields}</div>
     </details>
-    ${editSection}
+    ${actionSection}
   `;
   detailPanel.classList.add("open");
   detailPanel.setAttribute("aria-hidden", "false");
