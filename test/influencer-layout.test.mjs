@@ -20,3 +20,12 @@ test("Influencer details open in the shared detail drawer instead of a permanent
   assert.doesNotMatch(app, /influencerInlineDetail/);
   assert.match(app, /detailPanel\.classList\.add\("open"\)/);
 });
+
+test("User list table is integrated into the page instead of a small inner scroll panel", () => {
+  const css = fs.readFileSync(new URL("../static/styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /class="table-shell user-table-shell"/);
+  assert.match(html, /<table class="user-table">/);
+  assert.match(css, /\.table-shell\.user-table-shell\s*{[\s\S]*max-height:\s*none;/);
+  assert.match(css, /\.table-shell\.user-table-shell\s*{[\s\S]*overflow:\s*visible;/);
+});
