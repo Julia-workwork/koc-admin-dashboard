@@ -563,6 +563,21 @@ function editableFieldHtml(label, controlHtml) {
   return `<div class="field editable-field"><span>${label}</span>${controlHtml}</div>`;
 }
 
+function renderUserTypeMultiSelect(selectedTypes = []) {
+  const selected = new Set(selectedTypes);
+  return `<div id="edit-user-type-options" class="multi-select-chips">
+    ${OPTIONS.type
+      .map((type) => {
+        const color = PALETTES.type[type] || "#eef3f8";
+        return `<label class="multi-select-chip" style="--chip-color:${color};--chip-text:${textColorForBackground(color)}">
+          <input type="checkbox" value="${escapeHtml(type)}" ${selected.has(type) ? "checked" : ""} />
+          <span>${escapeHtml(type)}</span>
+        </label>`;
+      })
+      .join("")}
+  </div>`;
+}
+
 function renderDetail(user) {
   state.selected = user;
   setDetailHeader(user, "User Detail");
@@ -575,7 +590,7 @@ function renderDetail(user) {
       ? editableFieldHtml("User Status", `<select id="edit-user-status">${editOptionList(OPTIONS.status, user.status)}</select>`)
       : fieldHtml("User Status", chip(user.status, PALETTES.status[user.status])),
     canEdit
-      ? editableFieldHtml("User Type", `<input id="edit-user-type" value="${escapeHtml(user.types.join(", "))}" />`)
+      ? editableFieldHtml("User Type", renderUserTypeMultiSelect(user.types))
       : fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
     fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
     fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
@@ -688,6 +703,10 @@ function selectedKocSheetName(user) {
 }
 
 function buildKocUpdatePayload(user) {
+  const selectedTypes = Array.from(document.querySelectorAll("#edit-user-type-options input:checked"))
+    .map((input) => input.value)
+    .join(", ");
+
   return {
     recordType: "koc",
     sheetName: selectedKocSheetName(user),
@@ -696,7 +715,7 @@ function buildKocUpdatePayload(user) {
       "Update Input - Write Here": document.querySelector("#update-input")?.value || "",
       "User Level (S/A/B/C/TBD)": document.querySelector("#edit-user-level")?.value || user.level || "TBD",
       "User Status": document.querySelector("#edit-user-status")?.value || user.status || "",
-      "User Type": document.querySelector("#edit-user-type")?.value || "",
+      "User Type": selectedTypes,
       "Content Feedback Quality": document.querySelector("#edit-content-quality")?.value || user.contentQuality || "",
       "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
       "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",

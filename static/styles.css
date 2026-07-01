@@ -1061,6 +1061,59 @@ td:first-child .link-button {
   resize: vertical;
 }
 
+.multi-select-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.multi-select-chip {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.multi-select-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.multi-select-chip span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 7px 12px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.multi-select-chip input:checked + span {
+  border-color: var(--chip-color);
+  background: var(--chip-color);
+  color: var(--chip-text);
+  box-shadow: 0 8px 18px rgb(22 31 45 / 10%);
+}
+
+.multi-select-chip:focus-within span {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.multi-select-chip:hover span {
+  transform: translateY(-1px);
+}
+
 .detail-save-bar {
   position: sticky;
   bottom: 0;

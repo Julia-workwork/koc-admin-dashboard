@@ -60,9 +60,19 @@ test("Detail drawer shows the record level beside the selected name", () => {
 test("KOC user editable controls live inside the original detail sections", () => {
   assert.doesNotMatch(app, /Editable Operations/);
   assert.match(app, /<h3>Evaluation<\/h3>[\s\S]*edit-user-level/);
+  assert.match(app, /renderUserTypeMultiSelect\(user\.types\)/);
+  assert.match(app, /function renderUserTypeMultiSelect/);
+  assert.match(app, /class="multi-select-chips"/);
   assert.match(app, /<h3>Notes<\/h3>[\s\S]*edit-notes/);
   assert.match(app, /<h3>Follow-up<\/h3>[\s\S]*edit-next-follow-up/);
+  assert.doesNotMatch(app, /id="edit-user-type" value=/);
   assert.match(app, /detail-save-bar/);
+});
+
+test("KOC user type writes selected multi-select chips back as comma text", () => {
+  assert.match(app, /querySelectorAll\("#edit-user-type-options input:checked"\)/);
+  assert.match(app, /map\(\(input\) => input\.value\)/);
+  assert.match(app, /join\(", "\)/);
 });
 
 test("KOC user detail keeps only the save action after raw input removal", () => {
