@@ -1217,14 +1217,12 @@ td:first-child .link-button {
   }
 
   .summary-strip,
-  .influencer-summary,
   .today-grid,
   .rules-grid {
     grid-template-columns: 1fr;
   }
 
-  .summary-strip,
-  .influencer-summary {
+  .summary-strip {
     margin-top: -14px;
   }
 
@@ -1240,24 +1238,45 @@ td:first-child .link-button {
   }
 
   .users-sticky-panel .toolbar {
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    overflow-x: auto;
+    overflow-x: visible;
     padding: 0 2px 8px;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
   }
 
   .users-sticky-panel .toolbar label {
-    flex: 0 0 168px;
-    min-width: 168px;
-    scroll-snap-align: start;
+    min-width: 0;
   }
 
   .users-sticky-panel .toolbar .search-box {
-    flex-basis: min(320px, 78vw);
-    min-width: min(320px, 78vw);
+    grid-column: span 2;
+    min-width: 0;
+  }
+
+  .influencer-summary {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: -14px;
+  }
+
+  .influencer-summary .summary-card {
+    min-height: 96px;
+    padding: 14px 16px;
+  }
+
+  .influencer-summary .summary-card strong {
+    font-size: 34px;
+  }
+
+  .influencer-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .influencer-toolbar .search-box {
+    grid-column: auto;
   }
 
   .users-sticky-panel .toolbar label > span {
@@ -1266,6 +1285,14 @@ td:first-child .link-button {
 
   .users-sticky-panel .toolbar input,
   .users-sticky-panel .toolbar select {
+    min-height: 46px;
+    border-radius: 16px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .influencer-toolbar input,
+  .influencer-toolbar select {
     min-height: 46px;
     border-radius: 16px;
     padding: 10px 12px;
@@ -1305,5 +1332,18 @@ td:first-child .link-button {
   .section-title {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .users-sticky-panel .toolbar,
+  .influencer-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-sticky-panel .toolbar .search-box {
+    grid-column: 1 / -1;
+  }
+
+  .influencer-summary {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 }
