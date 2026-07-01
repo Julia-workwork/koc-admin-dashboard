@@ -1234,6 +1234,44 @@ td:first-child .link-button {
     grid-template-columns: 1fr;
   }
 
+  .users-sticky-panel {
+    position: static;
+    padding-bottom: 12px;
+  }
+
+  .users-sticky-panel .toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0 2px 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .users-sticky-panel .toolbar label {
+    flex: 0 0 168px;
+    min-width: 168px;
+    scroll-snap-align: start;
+  }
+
+  .users-sticky-panel .toolbar .search-box {
+    flex-basis: min(320px, 78vw);
+    min-width: min(320px, 78vw);
+  }
+
+  .users-sticky-panel .toolbar label > span {
+    font-size: 12px;
+  }
+
+  .users-sticky-panel .toolbar input,
+  .users-sticky-panel .toolbar select {
+    min-height: 46px;
+    border-radius: 16px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
   .creator-compact-hero,
   .creator-action-row {
     align-items: flex-start;

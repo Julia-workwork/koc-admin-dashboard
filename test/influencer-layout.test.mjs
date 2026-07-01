@@ -29,6 +29,16 @@ test("User list table is integrated into the page instead of a small inner scrol
   assert.match(css, /\.table-shell\.user-table-shell\s*{[\s\S]*overflow:\s*visible;/);
 });
 
+test("User filters stay compact and non-blocking on narrow screens", () => {
+  const narrowRules = css.match(/@media \(max-width: 980px\)\s*{[\s\S]*?(?=\n@media \(max-width: 640px\))/)?.[0] || "";
+
+  assert.match(narrowRules, /\.users-sticky-panel\s*{[\s\S]*position:\s*static;/);
+  assert.match(narrowRules, /\.users-sticky-panel \.toolbar\s*{[\s\S]*display:\s*flex;[\s\S]*flex-wrap:\s*nowrap;[\s\S]*overflow-x:\s*auto;/);
+  assert.match(narrowRules, /\.users-sticky-panel \.toolbar label\s*{[\s\S]*flex:\s*0 0 168px;/);
+  assert.match(narrowRules, /\.users-sticky-panel \.toolbar \.search-box\s*{[\s\S]*flex-basis:\s*min\(320px, 78vw\);/);
+  assert.match(narrowRules, /\.users-sticky-panel \.toolbar input,[\s\S]*\.users-sticky-panel \.toolbar select\s*{[\s\S]*min-height:\s*46px;/);
+});
+
 test("Influencer detail uses a compact decision panel", () => {
   const keylineStart = app.indexOf('<div class="creator-keyline">');
   const keylineEnd = app.indexOf("</div>", keylineStart);
