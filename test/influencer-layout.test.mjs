@@ -47,6 +47,17 @@ test("Influencer narrow screens keep summary and filters compact", () => {
   assert.match(narrowRules, /\.influencer-toolbar \.search-box\s*{[\s\S]*grid-column:\s*auto;/);
 });
 
+test("Today overview stays dense and readable on narrow screens", () => {
+  const narrowRules = css.match(/@media \(max-width: 980px\)\s*{[\s\S]*?(?=\n@media \(max-width: 640px\))/)?.[0] || "";
+  const phoneRules = css.match(/@media \(max-width: 640px\)\s*{[\s\S]*$/)?.[0] || "";
+
+  assert.match(narrowRules, /\.summary-strip\s*{[\s\S]*grid-template-columns:\s*repeat\(3, minmax\(150px, 1fr\)\);/);
+  assert.match(narrowRules, /\.summary-strip \.summary-card\s*{[\s\S]*min-height:\s*96px;/);
+  assert.match(narrowRules, /\.summary-strip \.summary-card strong\s*{[\s\S]*font-size:\s*34px;/);
+  assert.match(narrowRules, /\.today-grid\s*{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(phoneRules, /\.summary-strip\s*{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(130px, 1fr\)\);/);
+});
+
 test("Influencer detail uses a compact decision panel", () => {
   const keylineStart = app.indexOf('<div class="creator-keyline">');
   const keylineEnd = app.indexOf("</div>", keylineStart);
