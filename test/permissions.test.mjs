@@ -41,12 +41,26 @@ test("KOC updates keep only approved editable fields", () => {
 test("Influencer updates keep only approved editable fields", () => {
   const filtered = filterAllowedFields("influencer", {
     Name: "Do not change",
+    Channel: "TikTok, YouTube",
+    "ABC Program Potential": "Yes",
+    "Beta Tester Potential": "Yes",
+    "Cooperation Level": "High",
+    "User Type": "KOC Content, Beta Test",
+    "Exchange Product": "HA2",
+    "Country/Region": "UK",
     Status: "Active Collab",
     "Next Action": "Send sample follow-up",
     Profile: "Do not change",
   });
 
   assert.deepEqual(filtered, {
+    Channel: "TikTok, YouTube",
+    "ABC Program Potential": "Yes",
+    "Beta Tester Potential": "Yes",
+    "Cooperation Level": "High",
+    "User Type": "KOC Content, Beta Test",
+    "Exchange Product": "HA2",
+    "Country/Region": "UK",
     Status: "Active Collab",
     "Next Action": "Send sample follow-up",
   });
@@ -58,4 +72,8 @@ test("Editable field lists include the planned operational fields", () => {
   assert.ok(EDITABLE_FIELDS.koc.includes("User Type"));
   assert.equal(EDITABLE_FIELDS.influencer.includes("Raw Update Notes"), false);
   assert.ok(EDITABLE_FIELDS.influencer.includes("Next Action"));
+  assert.ok(EDITABLE_FIELDS.influencer.includes("Channel"));
+  assert.ok(EDITABLE_FIELDS.influencer.includes("ABC Program Potential"));
+  assert.ok(EDITABLE_FIELDS.influencer.includes("User Type"));
+  assert.ok(EDITABLE_FIELDS.influencer.includes("Exchange Product"));
 });

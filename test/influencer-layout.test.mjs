@@ -99,7 +99,8 @@ test("KOC user editable controls live inside the original detail sections", () =
 });
 
 test("KOC user type writes selected multi-select chips back as comma text", () => {
-  assert.match(app, /querySelectorAll\("#edit-user-type-options input:checked"\)/);
+  assert.match(app, /function selectedMultiSelectValues/);
+  assert.match(app, /selectedMultiSelectValues\("#edit-user-type-options"\)/);
   assert.match(app, /map\(\(input\) => input\.value\)/);
   assert.match(app, /join\(", "\)/);
 });
@@ -121,4 +122,17 @@ test("Influencer editable controls live inside the original detail sections", ()
   assert.match(app, /const visibleNotesFields = fieldGrid\([\s\S]*edit-influencer-notes/);
   assert.match(app, /const visibleNotesFields = fieldGrid\([\s\S]*edit-influencer-update-input/);
   assert.match(app, /id="save-influencer-button"[\s\S]*Save Influencer/);
+});
+
+test("Influencer detail lower fields are editable in place", () => {
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-channel-options/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-abc-potential/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-beta-potential/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-cooperation/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-type-options/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-exchange-product/);
+  assert.match(app, /const moreDetailFields = fieldGrid\([\s\S]*edit-influencer-country/);
+  assert.match(app, /function selectedMultiSelectValues/);
+  assert.match(app, /Channel:\s*selectedMultiSelectValues\("#edit-influencer-channel-options"\)/);
+  assert.match(app, /"User Type":\s*selectedMultiSelectValues\("#edit-influencer-type-options"\)/);
 });

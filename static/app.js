@@ -174,6 +174,16 @@ function editOptionList(items, selected = "") {
     .join("");
 }
 
+function mergeOptionValues(items, selectedValues = []) {
+  return [...new Set([...(items || []), ...(selectedValues || [])].filter(Boolean))];
+}
+
+function selectedMultiSelectValues(selector) {
+  return Array.from(document.querySelectorAll(`${selector} input:checked`))
+    .map((input) => input.value)
+    .join(", ");
+}
+
 function uniqueOptions(values) {
   return [...new Set(values.flat().filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
@@ -329,8 +339,22 @@ function buildInfluencerUpdatePayload(user) {
     rowNumber: user.rowNumber,
     fields: {
       Level: document.querySelector("#edit-influencer-level")?.value || user.level || "",
+      Channel: selectedMultiSelectValues("#edit-influencer-channel-options"),
+      "ABC Program Potential": document.querySelector("#edit-influencer-abc-potential")?.value || user.abcPotential || "",
+      "Beta Tester Potential": document.querySelector("#edit-influencer-beta-potential")?.value || user.betaPotential || "",
+      "Content Feedback Quality": document.querySelector("#edit-influencer-content-quality")?.value || user.contentQuality || "",
+      "Cooperation Level": document.querySelector("#edit-influencer-cooperation")?.value || user.cooperation || "",
+      "User Type": selectedMultiSelectValues("#edit-influencer-type-options"),
       Status: document.querySelector("#edit-influencer-status")?.value || user.status || "",
       Product: document.querySelector("#edit-influencer-product")?.value || "",
+      "Self-Owned Product": document.querySelector("#edit-influencer-owned-product")?.value || user.ownedProduct || "",
+      "Exchange Product": document.querySelector("#edit-influencer-exchange-product")?.value || user.exchangeProduct || "",
+      "Country/Region": document.querySelector("#edit-influencer-country")?.value || user.country || "",
+      Address: document.querySelector("#edit-influencer-address")?.value || user.address || "",
+      Description: document.querySelector("#edit-influencer-description")?.value || user.description || "",
+      Resources: document.querySelector("#edit-influencer-resources")?.value || user.resources || "",
+      "Extra Notes 1": document.querySelector("#edit-influencer-extra-notes")?.value || user.extraNotes || "",
+      "Extended Background": document.querySelector("#edit-influencer-background")?.value || user.extendedBackground || "",
       "Next Action": document.querySelector("#edit-influencer-next-action")?.value || "",
       Notes: document.querySelector("#edit-influencer-notes")?.value || user.notes || "",
       "Next Follow-up Date": document.querySelector("#edit-influencer-next-follow-up")?.value || user.nextFollowUpDate || "",
@@ -492,20 +516,48 @@ function renderInfluencerInlineDetail(user) {
       field("No.", user.no),
       field("Date", user.date),
       field("Profile", user.profile),
-      field("Channel", user.channel),
-      fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
-      fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
-      fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
-      fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
-      fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
-      field("Self-Owned Product", user.ownedProduct),
-      field("Exchange Product", user.exchangeProduct),
-      field("Country/Region", user.country),
-      field("Address", user.address),
-      field("Description", user.description),
-      field("Resources", user.resources),
-      field("Extra Notes 1", user.extraNotes),
-      field("Extended Background", user.extendedBackground),
+      canEdit
+        ? editableFieldHtml("Channel", renderMultiSelect("edit-influencer-channel-options", mergeOptionValues(OPTIONS.channel, user.channels), user.channels, PALETTES.channel))
+        : field("Channel", user.channel),
+      canEdit
+        ? editableFieldHtml("ABC Program Potential", `<select id="edit-influencer-abc-potential">${editOptionList(OPTIONS.yesNo, user.abcPotential)}</select>`)
+        : fieldHtml("ABC Program Potential", chip(user.abcPotential, PALETTES.potential[user.abcPotential])),
+      canEdit
+        ? editableFieldHtml("Beta Tester Potential", `<select id="edit-influencer-beta-potential">${editOptionList(OPTIONS.yesNo, user.betaPotential)}</select>`)
+        : fieldHtml("Beta Tester Potential", chip(user.betaPotential, PALETTES.beta[user.betaPotential])),
+      canEdit
+        ? editableFieldHtml("Content Feedback Quality", `<select id="edit-influencer-content-quality">${editOptionList(OPTIONS.quality, user.contentQuality)}</select>`)
+        : fieldHtml("Content Feedback Quality", chip(user.contentQuality, PALETTES.contentQuality[user.contentQuality])),
+      canEdit
+        ? editableFieldHtml("Cooperation Level", `<select id="edit-influencer-cooperation">${editOptionList(OPTIONS.quality, user.cooperation)}</select>`)
+        : fieldHtml("Cooperation Level", chip(user.cooperation, PALETTES.cooperation[user.cooperation])),
+      canEdit
+        ? editableFieldHtml("User Type", renderMultiSelect("edit-influencer-type-options", mergeOptionValues(OPTIONS.type, user.types), user.types, PALETTES.type))
+        : fieldHtml("User Type", renderChips(user.types, PALETTES.type)),
+      canEdit
+        ? editableFieldHtml("Self-Owned Product", `<input id="edit-influencer-owned-product" value="${escapeHtml(user.ownedProduct)}" />`)
+        : field("Self-Owned Product", user.ownedProduct),
+      canEdit
+        ? editableFieldHtml("Exchange Product", `<input id="edit-influencer-exchange-product" value="${escapeHtml(user.exchangeProduct)}" />`)
+        : field("Exchange Product", user.exchangeProduct),
+      canEdit
+        ? editableFieldHtml("Country/Region", `<input id="edit-influencer-country" value="${escapeHtml(user.country)}" />`)
+        : field("Country/Region", user.country),
+      canEdit
+        ? editableFieldHtml("Address", `<input id="edit-influencer-address" value="${escapeHtml(user.address)}" />`)
+        : field("Address", user.address),
+      canEdit
+        ? editableFieldHtml("Description", `<textarea id="edit-influencer-description">${escapeHtml(user.description)}</textarea>`)
+        : field("Description", user.description),
+      canEdit
+        ? editableFieldHtml("Resources", `<textarea id="edit-influencer-resources">${escapeHtml(user.resources)}</textarea>`)
+        : field("Resources", user.resources),
+      canEdit
+        ? editableFieldHtml("Extra Notes 1", `<textarea id="edit-influencer-extra-notes">${escapeHtml(user.extraNotes)}</textarea>`)
+        : field("Extra Notes 1", user.extraNotes),
+      canEdit
+        ? editableFieldHtml("Extended Background", `<textarea id="edit-influencer-background">${escapeHtml(user.extendedBackground)}</textarea>`)
+        : field("Extended Background", user.extendedBackground),
     ],
     "No extra details recorded.",
   );
@@ -563,12 +615,12 @@ function editableFieldHtml(label, controlHtml) {
   return `<div class="field editable-field"><span>${label}</span>${controlHtml}</div>`;
 }
 
-function renderUserTypeMultiSelect(selectedTypes = []) {
-  const selected = new Set(selectedTypes);
-  return `<div id="edit-user-type-options" class="multi-select-chips">
-    ${OPTIONS.type
+function renderMultiSelect(id, options, selectedValues = [], palette = {}) {
+  const selected = new Set(selectedValues);
+  return `<div id="${escapeHtml(id)}" class="multi-select-chips">
+    ${options
       .map((type) => {
-        const color = PALETTES.type[type] || "#eef3f8";
+        const color = palette[type] || "#eef3f8";
         return `<label class="multi-select-chip" style="--chip-color:${color};--chip-text:${textColorForBackground(color)}">
           <input type="checkbox" value="${escapeHtml(type)}" ${selected.has(type) ? "checked" : ""} />
           <span>${escapeHtml(type)}</span>
@@ -576,6 +628,10 @@ function renderUserTypeMultiSelect(selectedTypes = []) {
       })
       .join("")}
   </div>`;
+}
+
+function renderUserTypeMultiSelect(selectedTypes = []) {
+  return renderMultiSelect("edit-user-type-options", OPTIONS.type, selectedTypes, PALETTES.type);
 }
 
 function renderDetail(user) {
@@ -703,9 +759,7 @@ function selectedKocSheetName(user) {
 }
 
 function buildKocUpdatePayload(user) {
-  const selectedTypes = Array.from(document.querySelectorAll("#edit-user-type-options input:checked"))
-    .map((input) => input.value)
-    .join(", ");
+  const selectedTypes = selectedMultiSelectValues("#edit-user-type-options");
 
   return {
     recordType: "koc",
