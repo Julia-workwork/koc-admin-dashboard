@@ -228,7 +228,7 @@ function writeRowFields(sheetName, rowNumber, updates) {
 
   Object.keys(updates).forEach((field) => {
     const colIndex = headers.indexOf(field) + 1;
-    if (!colIndex) throw withStatus(new Error(`Field not found: ${field}`), 400);
+    if (!colIndex) return;
     sheet.getRange(rowNumber, colIndex).setValue(updates[field]);
   });
 }

@@ -184,6 +184,11 @@ function selectedMultiSelectValues(selector) {
     .join(", ");
 }
 
+function addFieldIfControlExists(fields, fieldName, selector) {
+  const control = document.querySelector(selector);
+  if (control) fields[fieldName] = control.value || "";
+}
+
 function uniqueOptions(values) {
   return [...new Set(values.flat().filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
@@ -760,22 +765,23 @@ function selectedKocSheetName(user) {
 
 function buildKocUpdatePayload(user) {
   const selectedTypes = selectedMultiSelectValues("#edit-user-type-options");
+  const fields = {
+    "User Level (S/A/B/C/TBD)": document.querySelector("#edit-user-level")?.value || user.level || "TBD",
+    "User Status": document.querySelector("#edit-user-status")?.value || user.status || "",
+    "User Type": selectedTypes,
+    "Content Feedback Quality": document.querySelector("#edit-content-quality")?.value || user.contentQuality || "",
+    "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
+    "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",
+    "Follow-up Reason": document.querySelector("#edit-follow-up-reason")?.value || user.followUpReason || "",
+    Notes: document.querySelector("#edit-notes")?.value || user.notes || "",
+  };
+  addFieldIfControlExists(fields, "Update Input - Write Here", "#update-input");
 
   return {
     recordType: "koc",
     sheetName: selectedKocSheetName(user),
     rowNumber: user.rowNumber,
-    fields: {
-      "Update Input - Write Here": document.querySelector("#update-input")?.value || "",
-      "User Level (S/A/B/C/TBD)": document.querySelector("#edit-user-level")?.value || user.level || "TBD",
-      "User Status": document.querySelector("#edit-user-status")?.value || user.status || "",
-      "User Type": selectedTypes,
-      "Content Feedback Quality": document.querySelector("#edit-content-quality")?.value || user.contentQuality || "",
-      "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
-      "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",
-      "Follow-up Reason": document.querySelector("#edit-follow-up-reason")?.value || user.followUpReason || "",
-      Notes: document.querySelector("#edit-notes")?.value || user.notes || "",
-    },
+    fields,
   };
 }
 

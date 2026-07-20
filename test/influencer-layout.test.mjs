@@ -5,6 +5,7 @@ import fs from "node:fs";
 const html = fs.readFileSync(new URL("../static/index.html", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../static/app.js", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../static/styles.css", import.meta.url), "utf8");
+const appsScript = fs.readFileSync(new URL("../google-apps-script/Code.gs", import.meta.url), "utf8");
 
 test("Influencer list uses the compact five-column table", () => {
   const influencerSection = html.match(/<section id="influencers-view"[\s\S]*?<\/section>\s*<section id="rules-view"/)?.[0] || "";
@@ -111,6 +112,13 @@ test("KOC user detail keeps only the save action after raw input removal", () =>
   assert.doesNotMatch(app, /Apply Preview/);
   assert.doesNotMatch(app, /id="analyze-button"/);
   assert.doesNotMatch(app, /id="apply-button"/);
+});
+
+test("KOC save does not fail when removed optional update input column is missing", () => {
+  assert.match(app, /function addFieldIfControlExists/);
+  assert.match(app, /addFieldIfControlExists\(fields, "Update Input - Write Here", "#update-input"\)/);
+  assert.doesNotMatch(app, /"Update Input - Write Here": document\.querySelector\("#update-input"\)/);
+  assert.match(appsScript, /if \(!colIndex\) return;/);
 });
 
 test("Influencer editable controls live inside the original detail sections", () => {
