@@ -60,10 +60,15 @@ function getBrowserDocument() {
   return typeof document === "undefined" ? null : document;
 }
 
-function shouldUseLocalApi() {
+function isGithubPagesHost() {
+  return typeof location !== "undefined" && location.hostname.endsWith("github.io");
+}
+
+export function shouldUseLocalApi() {
   if (KOC_CONFIG.apiMode === "local") return true;
   if (KOC_CONFIG.apiMode === "apps-script") return false;
-  return !isAppsScriptConfigured() || !location.hostname.endsWith("github.io");
+  if (isGithubPagesHost()) return false;
+  return !isAppsScriptConfigured();
 }
 
 function jsonpAppsScript(action, payload = {}) {

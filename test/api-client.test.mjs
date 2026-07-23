@@ -6,6 +6,7 @@ import {
   buildJsonpUrl,
   isAuthenticationError,
   messageForApiFailure,
+  shouldUseLocalApi,
   validateAppsScriptData,
 } from "../static/api-client.js";
 
@@ -32,6 +33,21 @@ test("builds a JSONP Apps Script URL for cross-origin fallback reads", () => {
     url,
     "https://script.google.com/macros/s/example/exec?action=users&callback=__kocJsonp1&payload=%7B%22token%22%3A%22abc+123%22%7D",
   );
+});
+
+test("GitHub Pages never falls back to missing local APIs", () => {
+  const previousLocation = global.location;
+  global.location = { hostname: "julia-workwork.github.io" };
+
+  try {
+    assert.equal(shouldUseLocalApi(), false);
+  } finally {
+    if (previousLocation === undefined) {
+      delete global.location;
+    } else {
+      global.location = previousLocation;
+    }
+  }
 });
 
 test("Apps Script supports callback-wrapped JSONP output", () => {
