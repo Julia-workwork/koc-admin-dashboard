@@ -31,6 +31,7 @@ const EDITABLE_FIELDS = {
     'Last Contact Date',
     'Next Follow-up Date',
     'Follow-up Reason',
+    'Description',
     'Notes',
     'AI Suggestion Status',
   ],

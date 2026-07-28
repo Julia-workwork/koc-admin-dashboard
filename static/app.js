@@ -673,7 +673,9 @@ function renderDetail(user) {
   ]);
   const noteFields = fieldGrid(
     [
-      field("Description", user.description),
+      canEdit
+        ? editableFieldHtml("Description", `<textarea id="edit-description">${escapeHtml(user.description)}</textarea>`)
+        : field("Description", user.description),
       field("Resources", user.resources),
       canEdit
         ? editableFieldHtml("Notes", `<textarea id="edit-notes">${escapeHtml(user.notes)}</textarea>`)
@@ -773,6 +775,7 @@ function buildKocUpdatePayload(user) {
     "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
     "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",
     "Follow-up Reason": document.querySelector("#edit-follow-up-reason")?.value || user.followUpReason || "",
+    Description: document.querySelector("#edit-description")?.value || user.description || "",
     Notes: document.querySelector("#edit-notes")?.value || user.notes || "",
   };
   addFieldIfControlExists(fields, "Update Input - Write Here", "#update-input");
