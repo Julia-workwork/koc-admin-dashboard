@@ -207,10 +207,10 @@ function handleApply(session, body, params) {
   if (!Object.keys(updates).length) throw withStatus(new Error('No approved fields to update.'), 400);
   if (!rowNumber || rowNumber < 1) throw withStatus(new Error('Invalid row number.'), 400);
 
-  writeRowFields(sheetName, rowNumber, updates);
-  appendAudit(session, sheetName, rowNumber, updates);
+  const resolvedRowNumber = writeRowFields(sheetName, rowNumber, updates, body.identity || {});
+  appendAudit(session, sheetName, resolvedRowNumber, updates);
 
-  return outputResponse({ status: 'ok', sheetName, rowNumber, fields: updates }, params);
+  return outputResponse({ status: 'ok', sheetName, rowNumber: resolvedRowNumber, fields: updates }, params);
 }
 
 function filterAllowedFields(recordType, fields) {
@@ -222,16 +222,87 @@ function filterAllowedFields(recordType, fields) {
   return output;
 }
 
-function writeRowFields(sheetName, rowNumber, updates) {
+function writeRowFields(sheetName, rowNumber, updates, identity) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) throw withStatus(new Error(`Sheet not found: ${sheetName}`), 404);
-  const headers = sheet.getRange(2, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  const headerInfo = getHeaderInfo(sheet);
+  const headers = headerInfo.headers;
+  const resolvedRowNumber = resolveRowNumber(sheet, headerInfo, rowNumber, identity || {});
 
   Object.keys(updates).forEach((field) => {
     const colIndex = headers.indexOf(field) + 1;
     if (!colIndex) return;
-    sheet.getRange(rowNumber, colIndex).setValue(updates[field]);
+    sheet.getRange(resolvedRowNumber, colIndex).setValue(updates[field]);
   });
+  return resolvedRowNumber;
+}
+
+function getHeaderInfo(sheet) {
+  const lastColumn = sheet.getLastColumn();
+  const scanRows = Math.min(10, sheet.getLastRow());
+  const values = sheet.getRange(1, 1, scanRows, lastColumn).getDisplayValues();
+  const headerIndex = values.findIndex((row) => row.indexOf('Name') !== -1 && (row.indexOf('No.') !== -1 || row.indexOf('Level') !== -1));
+  const rowNumber = headerIndex === -1 ? 2 : headerIndex + 1;
+  return {
+    rowNumber,
+    headers: sheet.getRange(rowNumber, 1, 1, lastColumn).getDisplayValues()[0],
+  };
+}
+
+function resolveRowNumber(sheet, headerInfo, requestedRowNumber, identity) {
+  if (!hasIdentity(identity) || rowMatchesIdentity(sheet, headerInfo, requestedRowNumber, identity)) {
+    return requestedRowNumber;
+  }
+
+  const match = findIdentityRow(sheet, headerInfo, identity);
+  if (match) return match;
+  throw withStatus(new Error(`Selected row no longer matches ${identity.name || 'this record'}. Please reload the dashboard and try again.`), 409);
+}
+
+function hasIdentity(identity) {
+  return Boolean(identity && (identity.name || identity.email || identity.no));
+}
+
+function rowMatchesIdentity(sheet, headerInfo, rowNumber, identity) {
+  if (rowNumber <= headerInfo.rowNumber || rowNumber > sheet.getLastRow()) return false;
+  const row = readRowObject(sheet, headerInfo, rowNumber);
+  if (identity.name) return cleanText(row.Name) === cleanText(identity.name);
+  if (identity.email) return cleanText(row.Email) === cleanText(identity.email);
+  if (identity.no) return cleanText(row['No.']) === cleanText(identity.no);
+  return true;
+}
+
+function findIdentityRow(sheet, headerInfo, identity) {
+  const lastRow = sheet.getLastRow();
+  let bestRow = 0;
+  let bestScore = 0;
+  for (let rowNumber = headerInfo.rowNumber + 1; rowNumber <= lastRow; rowNumber += 1) {
+    const row = readRowObject(sheet, headerInfo, rowNumber);
+    let score = 0;
+    if (identity.name && cleanText(row.Name) === cleanText(identity.name)) score += 5;
+    if (identity.email && cleanText(row.Email) === cleanText(identity.email)) score += 3;
+    if (identity.no && cleanText(row['No.']) === cleanText(identity.no)) score += 3;
+    if (identity.date && cleanText(row.Date) === cleanText(identity.date)) score += 1;
+    if (identity.profile && cleanText(row.Profile) === cleanText(identity.profile)) score += 1;
+    if (score > bestScore) {
+      bestScore = score;
+      bestRow = rowNumber;
+    }
+  }
+  return bestScore >= 5 ? bestRow : 0;
+}
+
+function readRowObject(sheet, headerInfo, rowNumber) {
+  const values = sheet.getRange(rowNumber, 1, 1, headerInfo.headers.length).getDisplayValues()[0];
+  const row = {};
+  headerInfo.headers.forEach((header, index) => {
+    row[header] = values[index] || '';
+  });
+  return row;
+}
+
+function cleanText(value) {
+  return String(value || '').trim();
 }
 
 function appendAudit(session, sheetName, rowNumber, updates) {

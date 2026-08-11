@@ -342,6 +342,7 @@ function buildInfluencerUpdatePayload(user) {
     recordType: "influencer",
     sheetName: user.sheetName || "Influencers",
     rowNumber: user.rowNumber,
+    identity: recordIdentity(user),
     fields: {
       Level: document.querySelector("#edit-influencer-level")?.value || user.level || "",
       Channel: selectedMultiSelectValues("#edit-influencer-channel-options"),
@@ -784,7 +785,18 @@ function buildKocUpdatePayload(user) {
     recordType: "koc",
     sheetName: selectedKocSheetName(user),
     rowNumber: user.rowNumber,
+    identity: recordIdentity(user),
     fields,
+  };
+}
+
+function recordIdentity(user) {
+  return {
+    no: user.no || "",
+    name: user.name || "",
+    date: user.date || "",
+    email: user.email || "",
+    profile: user.profile || "",
   };
 }
 
