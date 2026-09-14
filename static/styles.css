@@ -264,9 +264,25 @@ main {
 }
 
 .follow-up-done-button {
-  border-color: #00563f;
-  background: #00563f;
+  border-color: var(--brand);
+  background: #ffffff;
+  color: var(--brand);
+  box-shadow: 0 6px 16px rgb(9 105 255 / 14%);
+  white-space: nowrap;
+}
+
+.follow-up-done-button:hover {
+  background: var(--brand);
   color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.follow-up-done-button:disabled {
+  border-color: #bfc8d6;
+  background: #eef3f8;
+  color: #596475;
+  box-shadow: none;
+  transform: none;
 }
 
 .button.ghost {
