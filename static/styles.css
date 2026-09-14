@@ -257,6 +257,18 @@ main {
   color: #ffffff;
 }
 
+.button.mini {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.follow-up-done-button {
+  border-color: #00563f;
+  background: #00563f;
+  color: #ffffff;
+}
+
 .button.ghost {
   border-color: rgb(255 255 255 / 28%);
   background: rgb(255 255 255 / 8%);
@@ -476,7 +488,14 @@ main {
   transform: translateY(-2px);
 }
 
-.user-card button,
+.user-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.user-card button:not(.button),
 .link-button {
   border: 0;
   background: transparent;

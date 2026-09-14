@@ -90,9 +90,11 @@ test("builds Today buckets for pending updates and follow-up dates", () => {
     normalizeKocRow({ Name: "A", "Update Input - Write Here": "new note" }, 3),
     normalizeKocRow({ Name: "B", "Next Follow-up Date": "2026-05-12" }, 4),
     normalizeKocRow({ Name: "C", "User Level (S/A/B/C/TBD)": "S", "Last Contact Date": "2026-03-01" }, 5),
+    normalizeKocRow({ Name: "D", "Follow-up Status": "Needed" }, 6),
+    normalizeKocRow({ Name: "E", "Next Follow-up Date": "2026-05-12", "Follow-up Status": "Done" }, 7),
   ];
   const buckets = buildTodayBuckets(rows, new Date("2026-05-13T00:00:00Z"));
   assert.equal(buckets.updatePending.length, 1);
-  assert.equal(buckets.needFollowUp.length, 1);
+  assert.equal(buckets.needFollowUp.length, 2);
   assert.equal(buckets.highValueQuiet.length, 1);
 });

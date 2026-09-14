@@ -30,6 +30,7 @@ const EDITABLE_FIELDS = {
     'User Type',
     'Last Contact Date',
     'Next Follow-up Date',
+    'Follow-up Status',
     'Follow-up Reason',
     'Description',
     'Notes',
@@ -61,6 +62,10 @@ const EDITABLE_FIELDS = {
     'Next Follow-up Date',
   ],
 };
+
+const AUTO_CREATE_FIELDS = [
+  'Follow-up Status',
+];
 
 function doGet(e) {
   return routeRequest(e, 'GET');
@@ -230,11 +235,22 @@ function writeRowFields(sheetName, rowNumber, updates, identity) {
   const resolvedRowNumber = resolveRowNumber(sheet, headerInfo, rowNumber, identity || {});
 
   Object.keys(updates).forEach((field) => {
-    const colIndex = headers.indexOf(field) + 1;
+    const colIndex = columnIndexForField(sheet, headerInfo, field);
     if (!colIndex) return;
     sheet.getRange(resolvedRowNumber, colIndex).setValue(updates[field]);
   });
   return resolvedRowNumber;
+}
+
+function columnIndexForField(sheet, headerInfo, field) {
+  const existing = headerInfo.headers.indexOf(field) + 1;
+  if (existing) return existing;
+  if (AUTO_CREATE_FIELDS.indexOf(field) === -1) return 0;
+
+  const nextColumn = headerInfo.headers.length + 1;
+  sheet.getRange(headerInfo.rowNumber, nextColumn).setValue(field);
+  headerInfo.headers.push(field);
+  return nextColumn;
 }
 
 function getHeaderInfo(sheet) {

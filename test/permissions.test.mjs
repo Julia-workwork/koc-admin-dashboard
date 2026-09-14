@@ -29,12 +29,14 @@ test("KOC updates keep only approved editable fields", () => {
     Name: "Do not change",
     "User Status": "Ready to Follow Up",
     "Next Follow-up Date": "2026/06/20",
+    "Follow-up Status": "Needed",
     Email: "private@example.com",
   });
 
   assert.deepEqual(filtered, {
     "User Status": "Ready to Follow Up",
     "Next Follow-up Date": "2026/06/20",
+    "Follow-up Status": "Needed",
   });
 });
 
@@ -71,6 +73,7 @@ test("Editable field lists include the planned operational fields", () => {
   assert.equal(EDITABLE_FIELDS.koc.includes("Raw Update Notes"), false);
   assert.ok(EDITABLE_FIELDS.koc.includes("User Type"));
   assert.ok(EDITABLE_FIELDS.koc.includes("Description"));
+  assert.ok(EDITABLE_FIELDS.koc.includes("Follow-up Status"));
   assert.equal(EDITABLE_FIELDS.influencer.includes("Raw Update Notes"), false);
   assert.ok(EDITABLE_FIELDS.influencer.includes("Next Action"));
   assert.ok(EDITABLE_FIELDS.influencer.includes("Channel"));

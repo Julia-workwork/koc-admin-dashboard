@@ -256,15 +256,22 @@ function renderSummary() {
     .join("");
 }
 
-function smallUserCard(user) {
+function smallUserCard(user, groupTitle = "") {
+  const doneButton = groupTitle === "Need Follow-up" && canEditRecords()
+    ? `<button class="button mini follow-up-done-button" type="button" data-followup-done-key="${escapeHtml(user.key)}">Done</button>`
+    : "";
   return `<article class="user-card">
-    <button data-key="${escapeHtml(user.key)}">${escapeHtml(user.name || "(No name)")}</button>
+    <div class="user-card-title">
+      <button data-key="${escapeHtml(user.key)}">${escapeHtml(user.name || "(No name)")}</button>
+      ${doneButton}
+    </div>
     <div class="chip-list">
       ${chip(user.year, "#eaf2f8")}
       ${chip(user.level || "TBD", PALETTES.level[user.level || "TBD"])}
+      ${groupTitle === "Need Follow-up" ? chip(user.followUpStatus || "Needed", "#F9AB00") : ""}
       ${chip(user.status || "No Status", PALETTES.status[user.status])}
     </div>
-    <div class="meta">${escapeHtml(user.followUpReason || user.updateInput || user.country || user.ownedProduct || "No reason yet")}</div>
+    <div class="meta">${escapeHtml(user.followUpReason || user.nextFollowUpDate || user.updateInput || user.country || user.ownedProduct || "No reason yet")}</div>
   </article>`;
 }
 
@@ -279,7 +286,7 @@ function renderToday() {
     .map(
       ([title, rows]) => `<section class="status-column">
         <h3>${title}</h3>
-        ${rows.slice(0, 12).map(smallUserCard).join("") || '<p class="meta">No users here.</p>'}
+        ${rows.slice(0, 12).map((user) => smallUserCard(user, title)).join("") || '<p class="meta">No users here.</p>'}
       </section>`,
     )
     .join("");
@@ -696,6 +703,9 @@ function renderDetail(user) {
         ? editableFieldHtml("Next Follow-up Date", `<input id="edit-next-follow-up" type="date" value="${escapeHtml(user.nextFollowUpDate)}" />`)
         : field("Next Follow-up Date", user.nextFollowUpDate),
       canEdit
+        ? editableFieldHtml("Follow-up Status", `<select id="edit-follow-up-status">${editOptionList(OPTIONS.followUpStatus, user.followUpStatus || "")}</select>`)
+        : fieldHtml("Follow-up Status", chip(user.followUpStatus, "#F9AB00")),
+      canEdit
         ? editableFieldHtml("Follow-up Reason", `<input id="edit-follow-up-reason" value="${escapeHtml(user.followUpReason)}" />`)
         : field("Follow-up Reason", user.followUpReason),
       field("AI Suggestion Status", user.aiSuggestionStatus),
@@ -775,6 +785,7 @@ function buildKocUpdatePayload(user) {
     "Content Feedback Quality": document.querySelector("#edit-content-quality")?.value || user.contentQuality || "",
     "Cooperation Level": document.querySelector("#edit-cooperation")?.value || user.cooperation || "",
     "Next Follow-up Date": document.querySelector("#edit-next-follow-up")?.value || user.nextFollowUpDate || "",
+    "Follow-up Status": document.querySelector("#edit-follow-up-status")?.value || user.followUpStatus || "",
     "Follow-up Reason": document.querySelector("#edit-follow-up-reason")?.value || user.followUpReason || "",
     Description: document.querySelector("#edit-description")?.value || user.description || "",
     Notes: document.querySelector("#edit-notes")?.value || user.notes || "",
@@ -818,6 +829,35 @@ async function saveSelectedRecord() {
       `<p class="state-message error">${escapeHtml(error instanceof Error ? error.message : "Unable to save record.")}</p>`,
     );
   }
+}
+
+async function completeFollowUp(user) {
+  try {
+    await applyFields(
+      {
+        recordType: "koc",
+        sheetName: selectedKocSheetName(user),
+        rowNumber: user.rowNumber,
+        identity: recordIdentity(user),
+        fields: {
+          "Follow-up Status": "Done",
+          "Last Contact Date": localTodayIso(),
+        },
+      },
+      sessionToken(),
+    );
+    await loadUsers();
+  } catch (error) {
+    setMessage(error instanceof Error ? error.message : "Unable to complete follow-up.", "error");
+  }
+}
+
+function localTodayIso() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function renderRules() {
@@ -913,6 +953,13 @@ function setupTabs() {
 
 function setupClicks() {
   document.body.addEventListener("click", (event) => {
+    const followUpButton = event.target.closest("[data-followup-done-key]");
+    if (followUpButton) {
+      const user = state.users.find((item) => item.key === followUpButton.dataset.followupDoneKey);
+      if (user) completeFollowUp(user);
+      return;
+    }
+
     const button = event.target.closest("[data-key]");
     if (!button) return;
     const user = state.users.find((item) => item.key === button.dataset.key);
