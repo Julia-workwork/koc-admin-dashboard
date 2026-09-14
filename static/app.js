@@ -44,6 +44,7 @@ const loginMessage = document.querySelector("#login-message");
 const usernameInput = document.querySelector("#username-input");
 const passwordInput = document.querySelector("#password-input");
 const accountPill = document.querySelector("#account-pill");
+const refreshButton = document.querySelector("#refresh-button");
 const logoutButton = document.querySelector("#logout-button");
 const appShell = document.querySelectorAll(".app-shell");
 const message = document.querySelector("#state-message");
@@ -121,6 +122,11 @@ function setMessage(text, type = "") {
 function hideMessage() {
   message.textContent = "";
   message.className = "state-message is-hidden";
+}
+
+function setRefreshLoading(isLoading) {
+  refreshButton.disabled = isLoading;
+  refreshButton.textContent = isLoading ? "Refreshing..." : "Refresh";
 }
 
 function textColorForBackground(color) {
@@ -1008,6 +1014,8 @@ function setupLogin() {
 }
 
 async function loadUsers() {
+  setRefreshLoading(true);
+  setMessage("Refreshing Google Sheet data...");
   try {
     const raw = await loadDashboard(sessionToken());
     const data = raw.data ? normalizeAppsScriptDashboard(raw.data) : raw;
@@ -1042,6 +1050,8 @@ async function loadUsers() {
       return;
     }
     setMessage(error instanceof Error ? error.message : "Unable to load Google Sheet data.", "error");
+  } finally {
+    setRefreshLoading(false);
   }
 }
 
@@ -1053,6 +1063,9 @@ setupClicks();
 logoutButton.addEventListener("click", () => {
   clearSession();
   showLogin("Signed out.");
+});
+refreshButton.addEventListener("click", () => {
+  loadUsers();
 });
 
 if (sessionToken()) {

@@ -275,6 +275,15 @@ main {
   color: #ffffff;
 }
 
+.button:disabled {
+  cursor: progress;
+  opacity: 0.68;
+}
+
+.refresh-button {
+  min-width: 92px;
+}
+
 .state-message {
   width: 100%;
   margin: 28px 0 28px;
