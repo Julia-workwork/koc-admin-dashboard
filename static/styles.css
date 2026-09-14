@@ -264,15 +264,15 @@ main {
 }
 
 .follow-up-done-button {
-  border-color: var(--brand);
+  border-color: #11161d;
   background: #ffffff;
-  color: var(--brand);
-  box-shadow: 0 6px 16px rgb(9 105 255 / 14%);
+  color: #11161d;
+  box-shadow: 0 6px 16px rgb(17 22 29 / 10%);
   white-space: nowrap;
 }
 
 .follow-up-done-button:hover {
-  background: var(--brand);
+  background: #11161d;
   color: #ffffff;
   transform: translateY(-1px);
 }
