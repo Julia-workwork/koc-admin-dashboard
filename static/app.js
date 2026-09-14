@@ -264,7 +264,7 @@ function renderSummary() {
 
 function smallUserCard(user, groupTitle = "") {
   const doneButton = groupTitle === "Need Follow-up" && canEditRecords()
-    ? `<button class="button mini follow-up-done-button" type="button" data-followup-done-key="${escapeHtml(user.key)}">Done</button>`
+    ? `<button class="button mini follow-up-done-button" type="button" data-followup-done-key="${escapeHtml(user.key)}">Mark Followed Up</button>`
     : "";
   return `<article class="user-card">
     <div class="user-card-title">
@@ -838,6 +838,11 @@ async function saveSelectedRecord() {
 }
 
 async function completeFollowUp(user) {
+  const button = document.querySelector(`[data-followup-done-key="${CSS.escape(user.key)}"]`);
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Saving...";
+  }
   try {
     await applyFields(
       {
@@ -854,6 +859,10 @@ async function completeFollowUp(user) {
     );
     await loadUsers();
   } catch (error) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Mark Followed Up";
+    }
     setMessage(error instanceof Error ? error.message : "Unable to complete follow-up.", "error");
   }
 }
